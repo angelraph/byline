@@ -39,7 +39,13 @@ async function compute(): Promise<{ rows: LeaderRow[]; scannedMarkets: number; s
     .slice(0, 50);
   const categoryOf = new Map(markets.map((m) => [m.marketId, m.category]));
 
-  const tapes = await mapLimit(traded, 8, (m) => getMarketTrades(m.marketId, 200));
+  // The whole scan must finish inside one 60s function run to be cached at all, so each
+  // phase has its own budget: about 12s for tapes, then about 22s for positions.
+  const tapeDeadline = Date.now() + 12_000;
+  const tapes = await mapLimit(traded, 8, (m) => {
+    if (Date.now() > tapeDeadline) return Promise.reject(new Error("Tape budget exhausted"));
+    return getMarketTrades(m.marketId, 200);
+  });
   const activity = new Map<string, { trades: number; categories: Set<string> }>();
   for (const t of tapes) {
     if (t.status !== "fulfilled") continue;
@@ -54,7 +60,7 @@ async function compute(): Promise<{ rows: LeaderRow[]; scannedMarkets: number; s
 
   // Hard budget for the positions phase so a slow Panta never stalls the scan; misses
   // are reported as delayed and retried on the next refresh.
-  const deadline = Date.now() + 30_000;
+  const deadline = Date.now() + 22_000;
 
   // Positions are the expensive call (60/min); score the most active wallets.
   const candidates = [...activity.entries()].sort((a, b) => b[1].trades - a[1].trades).slice(0, 30);
