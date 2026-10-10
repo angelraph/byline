@@ -70,7 +70,7 @@ Fill the rest of `.env.local` from `.env.example` (Solana RPC, optional OpenAI k
 
 1. Import the repo in Vercel and add the variables from `.env.example`.
 2. Optional: set `SITE_URL` to a custom domain (Vercel provides the default domain automatically).
-3. Keep caches warm: call `GET /api/cron/warm` with `Authorization: Bearer $CRON_SECRET` every 10 minutes (Vercel Cron on Pro, or any external scheduler such as cron-job.org on Hobby).
+3. Keep caches warm: call `GET /api/cron/warm` every 10 minutes (Vercel Cron on Pro, or any external scheduler such as cron-job.org on Hobby). No credentials needed; it only reads through time-boxed caches.
 
 ## Stack
 
