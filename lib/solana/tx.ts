@@ -85,9 +85,22 @@ export async function sendAndConfirm(
   })();
 
   try {
-    const res = await connection.confirmTransaction({ signature, blockhash, lastValidBlockHeight }, "confirmed");
-    if (res.value.err) throw new TxError("failed", "The transaction failed on-chain.");
-    return signature;
+    // Poll over HTTP: the RPC is relayed through /api/rpc, which has no websocket.
+    for (;;) {
+      await new Promise((r) => setTimeout(r, 1500));
+      const status = (await connection.getSignatureStatuses([signature])).value[0];
+      if (status?.err) throw new TxError("failed", "The transaction failed on-chain.");
+      if (status && (status.confirmationStatus === "confirmed" || status.confirmationStatus === "finalized")) {
+        return signature;
+      }
+      const height = await connection.getBlockHeight("confirmed");
+      if (height > lastValidBlockHeight) {
+        // One last look in case it landed in the final valid blocks.
+        const final = (await connection.getSignatureStatuses([signature], { searchTransactionHistory: true })).value[0];
+        if (final && !final.err && final.confirmationStatus) return signature;
+        throw new TxError("expired", `The transaction expired before it landed (blockhash ${blockhash.slice(0, 8)}…). Try again.`);
+      }
+    }
   } catch (err) {
     throw classifyTxError(err);
   } finally {
