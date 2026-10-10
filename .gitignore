@@ -48,3 +48,7 @@ next-env.d.ts
 /DO-THIS-NOW.md
 /.claude/
 /docs/
+
+.vercel
+.env*
+/VERCEL-KEYS-STEPS.md

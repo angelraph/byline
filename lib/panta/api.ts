@@ -1,4 +1,5 @@
 import "server-only";
+import { unstable_cache } from "next/cache";
 import { pantaRequest } from "./client";
 import {
   accountSchema,
@@ -164,6 +165,15 @@ export async function withLivePrices(markets: Market[], max = 40): Promise<Marke
     return d ? mergeMarket(m, d) : m;
   });
 }
+
+/**
+ * The whole catalog with live prices, computed once and shared by every page for 30s
+ * (stale-while-revalidate), so navigating between pages never waits on per-market
+ * detail calls. Kept warm by /api/cron/warm.
+ */
+export const getPricedCatalog = unstable_cache(async () => withLivePrices(await listAllMarkets()), ["priced-catalog-v1"], {
+  revalidate: 30,
+});
 
 export function getMarketTrades(marketId: string, limit = 50) {
   return pantaRequest(`/markets/${encodeURIComponent(marketId)}/trades/`, marketTradesSchema, {

@@ -141,7 +141,7 @@ export function Book() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-accent">Book</p>
-          <h1 className="mt-1 font-serif text-3xl font-semibold">Your positions</h1>
+          <h1 className="mt-1 font-display text-3xl font-semibold">Your positions</h1>
         </div>
         <Link href={`/u/${wallet}`} className="rounded-full border border-line-strong px-4 py-2 text-sm hover:border-paper-mute">
           Public byline · {shortAddr(wallet)}
@@ -204,7 +204,7 @@ export function Book() {
           <EmptyState
             title="Nothing open"
             body="Back a market and your position shows here as soon as Panta indexes it, usually within seconds."
-            action={<Link href="/" className="rounded-full bg-accent px-4 py-2 text-sm font-semibold text-accent-ink">Find a market</Link>}
+            action={<Link href="/wire" className="rounded-full bg-accent px-4 py-2 text-sm font-semibold text-accent-ink">Find a market</Link>}
           />
         ) : (
           <ul className="space-y-2">

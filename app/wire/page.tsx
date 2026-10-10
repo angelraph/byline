@@ -4,8 +4,9 @@ import { getBlotter, getTerminal, BIG_TRADE_SHARES } from "@/lib/wire";
 import { isBuyable } from "@/lib/panta/api";
 import type { Market } from "@/lib/panta/schemas";
 import { safe } from "@/lib/data/safe";
-import { cents, marketTitle, num, relativeTime, shortAddr, usdc } from "@/lib/format";
-import { Notice, PhaseBadge, SectionHeader } from "@/components/ui";
+import { marketTitle, num, relativeTime, shortAddr } from "@/lib/format";
+import { Notice, SectionHeader } from "@/components/ui";
+import { MarketCard } from "@/components/market-card";
 import { AutoRefresh } from "@/components/auto-refresh";
 
 export const metadata: Metadata = {
@@ -45,9 +46,8 @@ export default async function WirePage({
   const all = terminal.ok ? terminal.data : [];
   const categories = [...new Set(all.map((m) => m.category))].sort();
   const cat = sp.c && categories.includes(sp.c) ? sp.c : null;
-  const now = Date.now() / 1000;
   const rows = sortMarkets(
-    all.filter((m) => matches(m, filter) && (!cat || m.category === cat) && (!q || marketTitle(m).toLowerCase().includes(q))),
+    all.filter((m) => matches(m, filter) && (!cat || m.category === cat) && (!q || `${marketTitle(m)} ${m.description} ${m.category}`.toLowerCase().includes(q))),
     filter === "open" && sort === "volume" ? "closing" : sort,
   );
 
@@ -64,89 +64,68 @@ export default async function WirePage({
     return qs ? `/wire?${qs}` : "/wire";
   };
 
+  const SORT_LABEL: Record<Sort, string> = { volume: "Top", closing: "Closing soon", newest: "New" };
+  const STATUS_LABEL: Record<Filter, string> = { open: "Open", graduated: "Graduated", resolved: "Resolved", all: "All" };
+
   return (
     <div className="space-y-6">
       <AutoRefresh seconds={30} />
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-accent">The Wire</p>
-          <h1 className="mt-2 font-serif text-4xl font-semibold tracking-tight">Every market. Every trade.</h1>
-        </div>
-        <form action="/wire" className="flex w-full gap-2 sm:w-80">
-          {filter !== "open" ? <input type="hidden" name="f" value={filter} /> : null}
-          {cat ? <input type="hidden" name="c" value={cat} /> : null}
-          <input
-            name="q"
-            defaultValue={q}
-            placeholder="Search markets"
-            aria-label="Search markets"
-            className="w-full rounded-full border border-line bg-ink-2 px-4 py-2 text-sm outline-none focus:border-paper-mute"
-          />
-        </form>
+      <header className="animate-fade-up">
+        <p className="text-sm font-semibold text-accent">Markets</p>
+        <h1 className="mt-2 font-display text-4xl font-bold tracking-tight">{q ? `Results for "${q}"` : "Every market. Every trade."}</h1>
+        <p className="mt-2 text-paper-dim">The full Panta catalog with live prices, plus a blotter of trades as they land.</p>
       </header>
 
       {!terminal.ok ? <Notice tone="error">Panta catalog unavailable: {terminal.error}</Notice> : null}
 
-      <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
+      <div className="grid gap-8 lg:grid-cols-[1fr_340px]">
         <section className="min-w-0">
-          <div className="mb-3 flex flex-wrap gap-2">
-            {(["open", "graduated", "resolved", "all"] as const).map((f) => (
-              <Link key={f} href={link({ f })} className={`rounded-full border px-3 py-1.5 text-sm capitalize ${filter === f ? "border-paper bg-paper text-ink" : "border-line text-paper-dim hover:text-paper"}`}>
-                {f}
-              </Link>
-            ))}
-            <span className="mx-1 hidden h-5 w-px self-center bg-line sm:block" aria-hidden="true" />
-            {(["volume", "closing", "newest"] as const).map((s) => (
-              <Link key={s} href={link({ s })} className={`rounded-full px-3 py-1.5 text-sm capitalize ${sort === s ? "bg-ink-3 text-paper" : "text-paper-dim hover:text-paper"}`}>
-                {s}
-              </Link>
-            ))}
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line">
+            <nav className="no-scrollbar -mb-px flex gap-1 overflow-x-auto" aria-label="Status">
+              {(["open", "graduated", "resolved", "all"] as const).map((f) => (
+                <Link
+                  key={f}
+                  href={link({ f })}
+                  className={`shrink-0 border-b-2 px-3 pb-2.5 text-sm font-medium ${filter === f ? "border-accent text-paper" : "border-transparent text-paper-dim hover:text-paper"}`}
+                >
+                  {STATUS_LABEL[f]}
+                </Link>
+              ))}
+            </nav>
+            <div className="mb-2 inline-flex rounded-full border border-line bg-ink-2 p-0.5" role="group" aria-label="Sort">
+              {(["volume", "closing", "newest"] as const).map((s) => (
+                <Link
+                  key={s}
+                  href={link({ s })}
+                  className={`rounded-full px-3 py-1 text-xs font-medium transition ${sort === s ? "bg-accent text-accent-ink" : "text-paper-dim hover:text-paper"}`}
+                >
+                  {SORT_LABEL[s]}
+                </Link>
+              ))}
+            </div>
           </div>
-          <div className="-mx-4 mb-4 flex gap-2 no-scrollbar overflow-x-auto px-4">
-            <Link href={link({ c: null })} className={`shrink-0 rounded-full px-3 py-1 text-xs ${!cat ? "bg-ink-3 text-paper" : "text-paper-mute hover:text-paper"}`}>All categories</Link>
+          <div className="no-scrollbar -mx-4 my-4 flex gap-2 overflow-x-auto px-4">
+            <Link href={link({ c: null })} className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium ${!cat ? "border-accent bg-accent-soft text-paper" : "border-line text-paper-dim hover:text-paper"}`}>
+              All topics
+            </Link>
             {categories.map((c) => (
-              <Link key={c} href={link({ c })} className={`shrink-0 rounded-full px-3 py-1 text-xs capitalize ${cat === c ? "bg-ink-3 text-paper" : "text-paper-mute hover:text-paper"}`}>
+              <Link key={c} href={link({ c })} className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium capitalize ${cat === c ? "border-accent bg-accent-soft text-paper" : "border-line text-paper-dim hover:text-paper"}`}>
                 {c.replace(/-/g, " ")}
               </Link>
             ))}
           </div>
 
           {rows.length === 0 ? (
-            <p className="rounded-xl border border-dashed border-line-strong p-8 text-center text-sm text-paper-mute">
-              No markets match. {filter === "open" ? <Link href="/forge" className="text-accent underline">Forge one</Link> : null}
-            </p>
+            <div className="card p-10 text-center text-sm text-paper-dim">
+              No markets match.{" "}
+              {filter === "open" ? <Link href="/forge" className="font-semibold text-accent">Create one →</Link> : null}
+            </div>
           ) : (
-            <ul className="divide-y divide-line overflow-hidden rounded-2xl border border-line">
-              {rows.map((m) => {
-                const closes = m.endTime ? m.endTime - now : null;
-                return (
-                  <li key={m.marketId}>
-                    <Link href={`/m/${m.marketId}`} className="flex items-center gap-3 bg-ink-2 px-4 py-3 transition hover:bg-ink-3">
-                      {m.images[0] ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={m.images[0]} alt="" className="h-10 w-10 shrink-0 rounded-lg object-cover" loading="lazy" />
-                      ) : (
-                        <span className="h-10 w-10 shrink-0 rounded-lg bg-ink-3" aria-hidden="true" />
-                      )}
-                      <div className="min-w-0 flex-1">
-                        <p className="line-clamp-1 text-sm">{marketTitle(m)}</p>
-                        <p className="mt-0.5 flex flex-wrap items-center gap-2 font-mono text-[11px] text-paper-mute">
-                          <span className="capitalize">{m.category.replace(/-/g, " ")}</span>
-                          <PhaseBadge phase={m.resolved ? "resolved" : m.phase} />
-                          {m.endTime !== null && closes !== null && closes > 0 && isBuyable(m) ? <span>closes {relativeTime(m.endTime * 1000)}</span> : null}
-                        </p>
-                      </div>
-                      <div className="shrink-0 text-right font-mono text-xs tabular">
-                        {isBuyable(m) ? (
-                          <p><span className="text-yes">{cents(m.yesPrice)}</span> <span className="text-paper-mute">/</span> <span className="text-no">{cents(m.noPrice)}</span></p>
-                        ) : null}
-                        <p className="text-paper-mute">{usdc(m.totalVolumeUsdc ?? m.volumeUsdc, { compact: true })}</p>
-                      </div>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {rows.map((m) => (
+                <MarketCard key={m.marketId} m={m} buyable={isBuyable(m)} />
+              ))}
+            </div>
           )}
         </section>
 

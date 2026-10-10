@@ -171,7 +171,7 @@ export function BuyPanel({
         <p className="font-mono text-[11px] uppercase tracking-wider text-yes">
           {step.status === "confirmed" ? "Verified on-chain" : "Landed on-chain · Panta confirming"}
         </p>
-        <p className="font-serif text-2xl leading-tight">
+        <p className="font-display text-2xl leading-tight">
           You hold {Number(step.shares).toFixed(2)} <span className={step.side === "yes" ? "text-yes" : "text-no"}>{step.side.toUpperCase()}</span> shares.
         </p>
         <p className="text-sm text-paper-dim">This position is now on your byline. It settles when the market resolves.</p>
@@ -251,7 +251,12 @@ export function BuyPanel({
               <div className="flex justify-between"><dt className="text-paper-mute">Shares</dt><dd>{Number(quote.shares).toFixed(2)}</dd></div>
               <div className="flex justify-between"><dt className="text-paper-mute">Avg price</dt><dd>{cents(quote.avgPrice)}</dd></div>
               <div className="flex justify-between"><dt className="text-paper-mute">Fee</dt><dd>{usdc(quote.feeUsdc)}</dd></div>
-              <div className="flex justify-between"><dt className="text-paper-mute">Pays if {side.toUpperCase()}</dt><dd className="text-yes">{usdc(Number(quote.shares))}</dd></div>
+              <div className="flex justify-between">
+                <dt className="text-paper-mute" title="Winning shares redeem from the market's pool, so the final payout can land below $1 per share.">
+                  Payout if {side.toUpperCase()}
+                </dt>
+                <dd className="text-yes">up to {usdc(Number(quote.shares))}</dd>
+              </div>
               <div className="flex justify-between pt-1 text-xs text-paper-mute">
                 <dt>Quote refreshes in</dt>
                 <dd>{quoting ? "…" : `${left}s`}</dd>

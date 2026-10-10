@@ -282,7 +282,7 @@ export function ForgeForm({
       <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start">
         <div className="rounded-2xl border border-line bg-ink-2 p-5">
           <p className="font-mono text-[11px] uppercase tracking-wider text-paper-mute">Preview</p>
-          <p className="mt-2 font-serif text-xl leading-snug">{draft.question || "Your question appears here"}</p>
+          <p className="mt-2 font-display text-xl leading-snug">{draft.question || "Your question appears here"}</p>
           <p className="mt-2 line-clamp-4 text-xs text-paper-dim">{draft.resolutionRule}</p>
 
           <div className="mt-4 rounded-xl bg-ink p-3 font-mono text-sm tabular">

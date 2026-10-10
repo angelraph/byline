@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import { getDesk } from "@/lib/desks";
 import { getFixtures, type Fixture } from "@/lib/sports/espn";
 import { marketsForFixture } from "@/lib/sports/match";
-import { isBuyable, listAllMarkets, withLivePrices } from "@/lib/panta/api";
+import { getPricedCatalog, isBuyable } from "@/lib/panta/api";
 import type { Market } from "@/lib/panta/schemas";
 import { getLeaderboard, sortRows } from "@/lib/leaderboard";
 import { safe } from "@/lib/data/safe";
@@ -72,7 +72,7 @@ export default async function DeskPage({ params }: { params: Promise<{ slug: str
   const desk = getDesk(slug);
   if (!desk) notFound();
 
-  const catalog = await safe(async () => withLivePrices(await listAllMarkets()));
+  const catalog = await safe(() => getPricedCatalog());
   const markets = catalog.ok ? catalog.data : [];
 
   let fixtures: { fixture: Fixture; markets: Market[] }[] = [];
@@ -106,7 +106,7 @@ export default async function DeskPage({ params }: { params: Promise<{ slug: str
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <Link href="/desks" className="font-mono text-[11px] uppercase tracking-[0.2em] text-accent hover:underline">← Fan Desks</Link>
-          <h1 className="mt-2 font-serif text-4xl font-semibold tracking-tight">{desk.name} desk</h1>
+          <h1 className="mt-2 font-display text-4xl font-semibold tracking-tight">{desk.name} desk</h1>
           <p className="mt-2 max-w-2xl text-paper-dim">{desk.blurb}</p>
         </div>
         <Link href="/forge" className="self-start rounded-full bg-accent px-4 py-2 text-sm font-semibold text-accent-ink sm:self-auto">

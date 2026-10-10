@@ -112,7 +112,7 @@ export default async function MarketPage({
               // eslint-disable-next-line @next/next/no-img-element
               <img src={image} alt="" className="h-16 w-16 shrink-0 rounded-xl object-cover sm:h-20 sm:w-20" />
             ) : null}
-            <h1 className="font-serif text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">{marketTitle(market)}</h1>
+            <h1 className="font-display text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">{marketTitle(market)}</h1>
           </div>
           {market.description ? <p className="max-w-3xl text-paper-dim">{market.description}</p> : null}
           <ShareButton

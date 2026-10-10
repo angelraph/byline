@@ -24,7 +24,7 @@ export default async function DesksPage() {
     <div className="space-y-10">
       <header>
         <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-accent">Fan Desks</p>
-        <h1 className="mt-2 font-serif text-4xl font-semibold tracking-tight">Pick your room</h1>
+        <h1 className="mt-2 font-display text-4xl font-semibold tracking-tight">Pick your room</h1>
         <p className="mt-2 max-w-2xl text-paper-dim">Each desk gathers the games, the markets on them, and the callers with the best verified record in that world.</p>
       </header>
 
@@ -38,7 +38,7 @@ export default async function DesksPage() {
               <li key={d.slug}>
                 <Link href={`/desks/${d.slug}`} className="flex h-full flex-col rounded-2xl border border-line bg-ink-2 p-4 transition hover:border-line-strong">
                   <div className="flex items-center justify-between">
-                    <span className="font-serif text-xl font-semibold">{d.name}</span>
+                    <span className="font-display text-xl font-semibold">{d.name}</span>
                     {live > 0 ? <span className="rounded-full bg-live/15 px-2 py-0.5 font-mono text-[10px] text-live">{live} LIVE</span> : null}
                   </div>
                   <p className="mt-1 flex-1 text-sm text-paper-dim">{d.blurb}</p>
@@ -59,7 +59,7 @@ export default async function DesksPage() {
             return (
               <li key={d.slug}>
                 <Link href={`/desks/${d.slug}`} className="flex h-full flex-col rounded-2xl border border-line bg-ink-2 p-4 transition hover:border-line-strong">
-                  <span className="font-serif text-xl font-semibold">{d.name}</span>
+                  <span className="font-display text-xl font-semibold">{d.name}</span>
                   <p className="mt-1 flex-1 text-sm text-paper-dim">{d.blurb}</p>
                   <p className="mt-3 font-mono text-xs text-paper-mute">
                     {open} open · {inCat.length} total markets

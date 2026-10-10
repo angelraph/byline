@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getLeaderboard } from "@/lib/leaderboard";
 import { getBlotter } from "@/lib/wire";
 import { getSlate } from "@/lib/sports/espn";
-import { listAllMarkets } from "@/lib/panta/api";
+import { getPricedCatalog } from "@/lib/panta/api";
 import { jsonError } from "@/lib/api/route";
 
 export const dynamic = "force-dynamic";
@@ -19,7 +19,7 @@ export async function GET(req: Request) {
   if (req.headers.get("authorization") !== `Bearer ${secret}`) return jsonError("UNAUTHORIZED", "Unauthorized", 401);
 
   const started = Date.now();
-  const results = await Promise.allSettled([listAllMarkets(), getSlate(), getBlotter(), getLeaderboard()]);
+  const results = await Promise.allSettled([getPricedCatalog(), getSlate(), getBlotter(), getLeaderboard()]);
   const names = ["catalog", "sports", "blotter", "leaderboard"];
   return NextResponse.json({
     ok: results.every((r) => r.status === "fulfilled"),

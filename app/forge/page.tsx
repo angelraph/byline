@@ -47,14 +47,14 @@ export default async function ForgePage({
     <div className="space-y-6">
       <header>
         <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-accent">Forge</p>
-        <h1 className="mt-2 font-serif text-4xl font-semibold tracking-tight">{label ? `Open a market on ${label}` : "Open a market"}</h1>
+        <h1 className="mt-2 font-display text-4xl font-semibold tracking-tight">{label ? `Open a market on ${label}` : "Open a market"}</h1>
         <p className="mt-2 max-w-2xl text-paper-dim">
           Write the question, set the rule, sign once. It goes live on Panta for anyone to trade, and you earn creator fees when it graduates.
         </p>
       </header>
       {fixtureId && !f ? (
         <Notice tone="warn">
-          That fixture isn&apos;t in the live feed right now. You can still write the market by hand, or <Link href="/" className="underline">pick another game</Link>.
+          That fixture isn&apos;t in the live feed right now. You can still write the market by hand, or <Link href="/slate" className="underline">pick another game</Link>.
         </Notice>
       ) : null}
       {f && !tradable ? <Notice tone="warn">This game is over or about to end, so a market on it can&apos;t be traded.</Notice> : null}

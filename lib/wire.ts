@@ -1,6 +1,6 @@
 import "server-only";
 import { unstable_cache } from "next/cache";
-import { getMarketTrades, isListable, isOpen, listAllMarkets, withLivePrices } from "@/lib/panta/api";
+import { getMarketTrades, getPricedCatalog, isListable, isOpen, listAllMarkets } from "@/lib/panta/api";
 import type { Market, Trade } from "@/lib/panta/schemas";
 import { mapLimit } from "@/lib/leaderboard";
 import { num } from "@/lib/format";
@@ -37,6 +37,5 @@ async function loadBlotter(): Promise<{ rows: BlotterRow[]; scanned: number }> {
 export const getBlotter = unstable_cache(loadBlotter, ["wire-blotter-v1"], { revalidate: 30 });
 
 export async function getTerminal(): Promise<Market[]> {
-  const markets = await listAllMarkets();
-  return (await withLivePrices(markets)).filter(isListable);
+  return (await getPricedCatalog()).filter(isListable);
 }

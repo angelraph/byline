@@ -8,6 +8,8 @@ import { buildCalls, computeStats, type CallRecord } from "@/lib/stats";
 import { cents, pct, relativeTime, shortAddr, signedPct, usdc } from "@/lib/format";
 import { EmptyState, Notice, SectionHeader } from "@/components/ui";
 import { ShareButton } from "@/components/share-button";
+import { DivisionBadge } from "@/components/division-badge";
+import { divisionFor } from "@/lib/divisions";
 
 export const revalidate = 30;
 
@@ -115,7 +117,10 @@ export default async function BylinePage({ params }: { params: Promise<{ wallet:
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-accent">Byline · verified on Panta</p>
-          <h1 className="mt-2 break-all font-serif text-3xl font-semibold sm:text-4xl">{shortAddr(wallet, 6)}</h1>
+          <div className="mt-2 flex flex-wrap items-center gap-3">
+            <h1 className="break-all font-display text-3xl font-bold sm:text-4xl">{shortAddr(wallet, 6)}</h1>
+            {positions.ok ? <DivisionBadge d={divisionFor(stats)} size="md" /> : null}
+          </div>
           <p className="mt-1 text-sm text-paper-dim">
             Every call below is an on-chain Panta position. Outcomes and payouts come from the chain, not from this page.
           </p>
@@ -191,6 +196,26 @@ export default async function BylinePage({ params }: { params: Promise<{ wallet:
           tone={stats.streak ? (stats.streak.kind === "won" ? "yes" : "no") : undefined}
         />
       </dl>
+      {stats.hitRate !== null && stats.expectedHitRate !== null ? (
+        <div className="card p-5" aria-label="Odds paid versus results">
+          <p className="text-sm font-semibold">Beat the market?</p>
+          <p className="mt-0.5 text-xs text-paper-mute">The odds this byline paid for, against how often the calls actually hit.</p>
+          <div className="mt-4 space-y-3 text-sm">
+            {[
+              { label: "Paid for", value: stats.expectedHitRate, cls: "bg-paper-mute" },
+              { label: "Hit", value: stats.hitRate, cls: stats.hitRate >= stats.expectedHitRate ? "bg-yes" : "bg-no" },
+            ].map((row) => (
+              <div key={row.label} className="flex items-center gap-3">
+                <span className="w-16 shrink-0 text-paper-dim">{row.label}</span>
+                <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-ink-3">
+                  <div className={`bar-grow h-full rounded-full ${row.cls}`} style={{ width: `${Math.round(row.value * 100)}%` }} />
+                </div>
+                <span className="w-12 shrink-0 text-right font-semibold tabular">{pct(row.value)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
       {stats.hedgedMarkets > 0 ? (
         <p className="text-xs text-paper-mute">
           {stats.hedgedMarkets} market{stats.hedgedMarkets === 1 ? "" : "s"} held on both sides {stats.hedgedMarkets === 1 ? "is" : "are"} excluded from scoring.
@@ -203,7 +228,7 @@ export default async function BylinePage({ params }: { params: Promise<{ wallet:
           <EmptyState
             title="No open calls"
             body="Back a market from the Slate and it shows up here the moment it lands on-chain."
-            action={<Link href="/" className="rounded-full bg-accent px-4 py-2 text-sm font-semibold text-accent-ink">Open the Slate</Link>}
+            action={<Link href="/slate" className="rounded-full bg-accent px-4 py-2 text-sm font-semibold text-accent-ink">Open the Slate</Link>}
           />
         ) : (
           <ul className="space-y-2">{open.map((c) => <CallRow key={`${c.marketId}-${c.side}`} c={c} />)}</ul>

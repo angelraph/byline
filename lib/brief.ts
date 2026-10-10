@@ -2,7 +2,7 @@ import "server-only";
 import { unstable_cache } from "next/cache";
 import { z } from "zod";
 import { structured } from "@/lib/ai";
-import { getMarketMerged, getMarketTrades, isBuyable, listAllMarkets, withLivePrices } from "@/lib/panta/api";
+import { getMarketMerged, getMarketTrades, getPricedCatalog, isBuyable } from "@/lib/panta/api";
 import { marketTitle, num } from "@/lib/format";
 
 /* ---------- Per-market brief ---------- */
@@ -109,7 +109,7 @@ const headlineBriefJson = {
 };
 
 export async function briefHeadline(text: string) {
-  const markets = (await withLivePrices(await listAllMarkets())).filter((m) => isBuyable(m));
+  const markets = (await getPricedCatalog()).filter((m) => isBuyable(m));
   const list = markets.slice(0, 60).map((m) => `${m.marketId} | ${marketTitle(m)} | YES ${m.yesPrice ?? "?"}`).join("\n");
   const today = new Date().toISOString().slice(0, 10);
   const result = await structured({

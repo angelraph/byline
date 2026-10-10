@@ -15,7 +15,7 @@ export function SectionHeader({
         {kicker ? (
           <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-paper-mute">{kicker}</p>
         ) : null}
-        <h2 className="font-serif text-xl font-semibold leading-tight sm:text-2xl">{title}</h2>
+        <h2 className="font-display text-xl font-semibold leading-tight sm:text-2xl">{title}</h2>
       </div>
       {action}
     </div>
@@ -34,7 +34,7 @@ export function Notice({ tone = "info", children }: { tone?: "info" | "warn" | "
 export function EmptyState({ title, body, action }: { title: string; body?: string; action?: ReactNode }) {
   return (
     <div className="rounded-2xl border border-dashed border-line-strong px-6 py-10 text-center">
-      <p className="font-serif text-lg">{title}</p>
+      <p className="font-display text-lg">{title}</p>
       {body ? <p className="mx-auto mt-1 max-w-md text-sm text-paper-dim">{body}</p> : null}
       {action ? <div className="mt-4 flex justify-center">{action}</div> : null}
     </div>

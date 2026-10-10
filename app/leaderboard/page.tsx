@@ -4,6 +4,8 @@ import { getLeaderboard, MIN_RESOLVED, sortRows, type SortKey } from "@/lib/lead
 import { safe } from "@/lib/data/safe";
 import { pct, relativeTime, shortAddr, signedPct } from "@/lib/format";
 import { EmptyState, Notice } from "@/components/ui";
+import { DivisionBadge } from "@/components/division-badge";
+import { divisionFor } from "@/lib/divisions";
 
 export const metadata: Metadata = {
   title: "Leaderboard",
@@ -47,7 +49,7 @@ export default async function LeaderboardPage({
     <div className="space-y-6">
       <header>
         <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-accent">Leaderboard</p>
-        <h1 className="mt-2 font-serif text-4xl font-semibold tracking-tight">Who actually calls it</h1>
+        <h1 className="mt-2 font-display text-4xl font-semibold tracking-tight">Who actually calls it</h1>
         <p className="mt-2 max-w-2xl text-paper-dim">
           Ranked by <strong className="text-paper">edge</strong>: hit rate minus the average odds paid. Winning favourites is easy; beating
           the price is the skill. Verified positions only, minimum {MIN_RESOLVED} resolved calls, hedged markets excluded.
@@ -100,7 +102,10 @@ export default async function LeaderboardPage({
                 <tr key={r.wallet} className="border-t border-line hover:bg-ink-2">
                   <td className="px-3 py-3 text-paper-mute sm:px-4">{i + 1}</td>
                   <td className="px-2 py-3">
-                    <Link href={`/u/${r.wallet}`} className="hover:text-accent">{shortAddr(r.wallet)}</Link>
+                    <span className="flex items-center gap-2">
+                      <Link href={`/u/${r.wallet}`} className="hover:text-accent">{shortAddr(r.wallet)}</Link>
+                      <DivisionBadge d={divisionFor(r.stats)} />
+                    </span>
                   </td>
                   <td className="px-2 py-3 text-right">{r.stats.wins}–{r.stats.losses}</td>
                   <td className={`px-2 py-3 text-right ${(r.stats.edge ?? 0) >= 0 ? "text-yes" : "text-no"}`}>{signedPct(r.stats.edge)}</td>

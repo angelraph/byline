@@ -103,7 +103,7 @@ export function HeadlineBrief() {
 
             <section className="rounded-2xl border border-accent/40 bg-accent/5 p-5">
               <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-accent">Draft market</p>
-              <p className="mt-2 font-serif text-lg leading-snug">{result.draft.question}</p>
+              <p className="mt-2 font-display text-lg leading-snug">{result.draft.question}</p>
               <p className="mt-2 text-xs text-paper-dim">{result.draft.resolutionRule}</p>
               <Link href={forgeHref} className="mt-4 inline-block rounded-full bg-accent px-4 py-2 text-sm font-semibold text-accent-ink">
                 Open in Forge →
