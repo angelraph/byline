@@ -80,10 +80,11 @@ function remember(m: Market) {
  * If every attempt is stripped, fall back to the last complete row seen for this market,
  * with the fresh row's phase/resolution layered on top so state changes still show.
  */
-export async function getMarket(marketId: string): Promise<Market> {
+export async function getMarket(marketId: string, opts: { retries?: number } = {}): Promise<Market> {
   const path = `/markets/${encodeURIComponent(marketId)}/`;
   let last = await pantaRequest(path, marketSchema, { revalidate: 10 });
-  for (let attempt = 0; attempt < 4 && isStripped(last); attempt++) {
+  const retries = opts.retries ?? 4;
+  for (let attempt = 0; attempt < retries && isStripped(last); attempt++) {
     await new Promise((r) => setTimeout(r, 250 * (attempt + 1)));
     last = await pantaRequest(path, marketSchema);
   }
@@ -155,7 +156,8 @@ export async function getMarketMerged(marketId: string): Promise<Market> {
  */
 export async function withLivePrices(markets: Market[], max = 40): Promise<Market[]> {
   const open = markets.filter(isOpen).slice(0, max);
-  const details = await Promise.allSettled(open.map((m) => getMarket(m.marketId)));
+  // One quick retry per market keeps the shared snapshot fast; gaps fall back to last-good rows.
+  const details = await Promise.allSettled(open.map((m) => getMarket(m.marketId, { retries: 1 })));
   const byId = new Map<string, Market>();
   details.forEach((d) => {
     if (d.status === "fulfilled") byId.set(d.value.marketId, d.value);

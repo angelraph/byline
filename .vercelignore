@@ -1,8 +1,8 @@
-.next
-.next-build
-node_modules
-docs
-.claude
+/.next
+/.next-build
+/node_modules
+/docs
+/.claude
 DO-THIS-NOW.md
 .env.local
 .env.vercel
