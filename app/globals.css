@@ -1,26 +1,123 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --ink: #0b0d0c;
+  --ink-2: #121614;
+  --ink-3: #1a1f1c;
+  --line: #262d29;
+  --line-strong: #36403a;
+  --paper: #ece9e1;
+  --paper-dim: #a9aca5;
+  --paper-mute: #6f756f;
+  --accent: #f2b544;
+  --accent-ink: #1a1305;
+  --yes: #3ddc97;
+  --yes-bg: rgba(61, 220, 151, 0.12);
+  --no: #ff6b5e;
+  --no-bg: rgba(255, 107, 94, 0.12);
+  --live: #ff3b30;
+  color-scheme: dark;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+@media (prefers-color-scheme: light) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --ink: #f6f3ec;
+    --ink-2: #ffffff;
+    --ink-3: #efeae0;
+    --line: #e1dbcf;
+    --line-strong: #cbc3b4;
+    --paper: #15130f;
+    --paper-dim: #4d4a43;
+    --paper-mute: #7d786d;
+    --accent: #b9770e;
+    --accent-ink: #fffaf0;
+    --yes: #0f8a57;
+    --yes-bg: rgba(15, 138, 87, 0.1);
+    --no: #c8372b;
+    --no-bg: rgba(200, 55, 43, 0.1);
+    --live: #d92d20;
+    color-scheme: light;
   }
 }
 
+@theme inline {
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-paper: var(--paper);
+  --color-paper-dim: var(--paper-dim);
+  --color-paper-mute: var(--paper-mute);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-yes: var(--yes);
+  --color-yes-bg: var(--yes-bg);
+  --color-no: var(--no);
+  --color-no-bg: var(--no-bg);
+  --color-live: var(--live);
+  --font-sans: var(--font-inter);
+  --font-serif: var(--font-newsreader);
+  --font-mono: var(--font-jetbrains);
+}
+
+html,
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--ink);
+  color: var(--paper);
+}
+
+body {
+  font-family: var(--font-inter), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@keyframes pulse-live {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+.live-dot {
+  animation: pulse-live 1.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live-dot { animation: none; }
+}
+
+/* Wallet adapter modal, restyled to match. */
+.wallet-adapter-modal-wrapper {
+  background: var(--ink-2) !important;
+  border: 1px solid var(--line);
+  font-family: var(--font-inter), system-ui, sans-serif !important;
+}
+.wallet-adapter-modal-title { color: var(--paper) !important; }
+.wallet-adapter-modal-list .wallet-adapter-button {
+  font-family: var(--font-inter), system-ui, sans-serif !important;
+  color: var(--paper) !important;
+}
+.wallet-adapter-modal-list .wallet-adapter-button:not([disabled]):hover {
+  background: var(--ink-3) !important;
+}
+
+/* Horizontal chip rows scroll by swipe without a visible bar. */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }

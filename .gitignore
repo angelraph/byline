@@ -39,3 +39,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local production build output
+/.next-build/
+!.env.example
+
+# personal setup notes
+/DO-THIS-NOW.md
+/.claude/
+/docs/

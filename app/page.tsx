@@ -1,103 +1,202 @@
-import Image from "next/image";
+import Link from "next/link";
+import { getSlate, type Fixture } from "@/lib/sports/espn";
+import { LEAGUES, isLeagueKey, type LeagueKey } from "@/lib/sports/leagues";
+import { marketsForFixture } from "@/lib/sports/match";
+import { isBuyable, isListable, isOpen, listAllMarkets, withLivePrices } from "@/lib/panta/api";
+import type { Market } from "@/lib/panta/schemas";
+import { safe } from "@/lib/data/safe";
+import { FixtureCard } from "@/components/slate/fixture-card";
+import { EmptyState, Notice, SectionHeader } from "@/components/ui";
+import { cents, marketTitle, usdc } from "@/lib/format";
 
-export default function Home() {
+export const revalidate = 60;
+
+function forgeHref(f: Fixture): string | null {
+  if (f.state === "post") return null;
+  const d = f.startsAt.slice(0, 10).replace(/-/g, "");
+  return `/forge?fixture=${encodeURIComponent(f.id)}&d=${d}`;
+}
+
+function dayKey(iso: string) {
+  return iso.slice(0, 10);
+}
+
+export default async function SlatePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ league?: string }>;
+}) {
+  const { league: leagueParam } = await searchParams;
+  const league: LeagueKey | null = leagueParam && isLeagueKey(leagueParam) ? leagueParam : null;
+
+  const [slate, catalog] = await Promise.all([
+    safe(() => getSlate({ daysBack: 1, daysAhead: 7 })),
+    safe(async () => withLivePrices(await listAllMarkets())),
+  ]);
+
+  const markets: Market[] = catalog.ok ? catalog.data : [];
+  const allFixtures = slate.ok ? slate.data.fixtures : [];
+  const fixtures = league ? allFixtures.filter((f) => f.league === league) : allFixtures;
+
+  const matched = new Set<string>();
+  const withMarkets = fixtures.map((f) => {
+    const ms = marketsForFixture(f, markets);
+    ms.forEach((m) => matched.add(m.marketId));
+    return { fixture: f, markets: ms };
+  });
+
+  const live = withMarkets.filter((x) => x.fixture.state === "in");
+  const upcoming = withMarkets.filter((x) => x.fixture.state === "pre");
+  const finals = withMarkets.filter((x) => x.fixture.state === "post").reverse();
+
+  // Upcoming fixtures that already have a market come first; then by kickoff.
+  const upcomingByDay = new Map<string, typeof upcoming>();
+  for (const x of upcoming) {
+    const k = dayKey(x.fixture.startsAt);
+    upcomingByDay.set(k, [...(upcomingByDay.get(k) ?? []), x]);
+  }
+
+  const openUnmatched = markets
+    .filter((m) => isOpen(m) && isListable(m) && !matched.has(m.marketId))
+    .sort((a, b) => Number(isBuyable(b)) - Number(isBuyable(a)));
+  const feedDown = !slate.ok || (slate.ok && allFixtures.length === 0 && slate.data.failed.length > 0);
+  const withMarketCount = withMarkets.filter((x) => x.markets.length > 0).length;
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <div className="space-y-10">
+      <section className="grid gap-6 lg:grid-cols-[1fr_320px] lg:items-end">
+        <div>
+          <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-accent">Tonight&apos;s Slate</p>
+          <h1 className="mt-2 max-w-3xl font-serif text-4xl font-semibold leading-[1.05] tracking-tight sm:text-5xl">
+            Make the call. Put money on it. Keep the receipt.
+          </h1>
+          <p className="mt-3 max-w-2xl text-paper-dim">
+            Real fixtures, live Panta markets, and a public track record that only counts calls backed on-chain.
+          </p>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+        <dl className="grid grid-cols-3 gap-3 font-mono tabular">
+          <div className="rounded-xl border border-line bg-ink-2 p-3">
+            <dt className="text-[10px] uppercase tracking-wider text-paper-mute">Fixtures</dt>
+            <dd className="mt-1 text-xl">{fixtures.length}</dd>
+          </div>
+          <div className="rounded-xl border border-line bg-ink-2 p-3">
+            <dt className="text-[10px] uppercase tracking-wider text-paper-mute">With market</dt>
+            <dd className="mt-1 text-xl">{withMarketCount}</dd>
+          </div>
+          <div className="rounded-xl border border-line bg-ink-2 p-3">
+            <dt className="text-[10px] uppercase tracking-wider text-paper-mute">Live</dt>
+            <dd className="mt-1 text-xl text-live">{live.length}</dd>
+          </div>
+        </dl>
+      </section>
+
+      {!catalog.ok ? <Notice tone="error">Panta markets unavailable: {catalog.error}</Notice> : null}
+      {feedDown ? (
+        <Notice tone="error">
+          The live sports feed is temporarily unavailable. Fixtures will reappear automatically; Panta markets below are live.
+        </Notice>
+      ) : slate.ok && slate.data.failed.length > 0 ? (
+        <Notice tone="warn">
+          Delayed: {slate.data.failed.map((k) => LEAGUES[k].label).join(", ")}. Showing the leagues that responded.
+        </Notice>
+      ) : null}
+
+      <nav aria-label="Leagues" className="-mx-4 flex gap-2 no-scrollbar overflow-x-auto px-4 pb-1">
+        <Link
+          href="/"
+          className={`shrink-0 rounded-full border px-3 py-1.5 text-sm ${!league ? "border-paper bg-paper text-ink" : "border-line text-paper-dim hover:text-paper"}`}
         >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+          All
+        </Link>
+        {(Object.keys(LEAGUES) as LeagueKey[]).map((k) => (
+          <Link
+            key={k}
+            href={`/?league=${k}`}
+            className={`shrink-0 rounded-full border px-3 py-1.5 text-sm ${league === k ? "border-paper bg-paper text-ink" : "border-line text-paper-dim hover:text-paper"}`}
+          >
+            {LEAGUES[k].short}
+          </Link>
+        ))}
+      </nav>
+
+      {live.length > 0 ? (
+        <section>
+          <SectionHeader kicker="In play" title="Live now" />
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {live.map((x) => (
+              <FixtureCard key={x.fixture.id} fixture={x.fixture} markets={x.markets} forgeHref={forgeHref(x.fixture)} />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      <div className="grid gap-10 lg:grid-cols-[1fr_320px]">
+        <div className="space-y-10">
+          {!feedDown && upcomingByDay.size === 0 && live.length === 0 ? (
+            <EmptyState
+              title="No fixtures in this window"
+              body={league ? `${LEAGUES[league].label} has nothing scheduled in the next 7 days.` : "No scheduled games in the next 7 days."}
+              action={
+                <Link href="/forge" className="rounded-full bg-accent px-4 py-2 text-sm font-semibold text-accent-ink">
+                  Forge a market
+                </Link>
+              }
+            />
+          ) : null}
+          {[...upcomingByDay.entries()].map(([day, items]) => (
+            <section key={day}>
+              <SectionHeader
+                kicker="Upcoming"
+                title={new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: "UTC" }).format(new Date(`${day}T12:00:00Z`))}
+              />
+              <div className="grid gap-4 sm:grid-cols-2">
+                {[...items]
+                  .sort((a, b) => Number(b.markets.length > 0) - Number(a.markets.length > 0))
+                  .map((x) => (
+                    <FixtureCard key={x.fixture.id} fixture={x.fixture} markets={x.markets} forgeHref={forgeHref(x.fixture)} />
+                  ))}
+              </div>
+            </section>
+          ))}
+          {finals.length > 0 ? (
+            <section>
+              <SectionHeader kicker="Settled on the pitch" title="Finals" />
+              <div className="grid gap-4 sm:grid-cols-2">
+                {finals.slice(0, 12).map((x) => (
+                  <FixtureCard key={x.fixture.id} fixture={x.fixture} markets={x.markets} forgeHref={null} />
+                ))}
+              </div>
+            </section>
+          ) : null}
+        </div>
+
+        <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start">
+          <SectionHeader
+            kicker="Panta"
+            title="Open markets"
+            action={<Link href="/wire" className="text-sm text-accent hover:underline">Wire →</Link>}
           />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+          {openUnmatched.length === 0 ? (
+            <p className="text-sm text-paper-mute">Every open market is on the slate.</p>
+          ) : (
+            <ul className="space-y-2">
+              {openUnmatched.slice(0, 10).map((m) => (
+                <li key={m.marketId}>
+                  <Link href={`/m/${m.marketId}`} className="block rounded-xl border border-line bg-ink-2 p-3 transition hover:border-line-strong">
+                    <p className="font-mono text-[10px] uppercase tracking-wider text-paper-mute">{m.category}</p>
+                    <p className="mt-1 line-clamp-2 text-sm">{marketTitle(m)}</p>
+                    <p className="mt-2 flex gap-2 font-mono text-xs tabular">
+                      <span className="text-yes">YES {cents(m.yesPrice)}</span>
+                      <span className="text-no">NO {cents(m.noPrice)}</span>
+                      <span className="ml-auto text-paper-mute">{usdc(m.volumeUsdc, { compact: true })}</span>
+                    </p>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </aside>
+      </div>
     </div>
   );
 }
