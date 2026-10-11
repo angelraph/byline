@@ -9,7 +9,7 @@ import { FixtureCard } from "@/components/slate/fixture-card";
 import { EmptyState, Notice, SectionHeader } from "@/components/ui";
 import { cents, marketTitle, usdc } from "@/lib/format";
 
-export const revalidate = 60;
+export const revalidate = 30;
 
 function forgeHref(f: Fixture): string | null {
   if (f.state === "post") return null;

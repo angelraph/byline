@@ -18,7 +18,7 @@ async function fetchScoreboard(path: string, dates?: string): Promise<unknown> {
     if (dates) url.searchParams.set("dates", dates);
     try {
       const res = await fetch(url, {
-        next: { revalidate: 120 },
+        next: { revalidate: 60 },
         headers: { Accept: "application/json", "User-Agent": "Mozilla/5.0 (compatible; BylineBot/1.0)" },
       });
       if (res.ok) return await res.json();

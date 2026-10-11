@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getPricedCatalog, isBuyable, isListable } from "@/lib/panta/api";
-import { getSlate } from "@/lib/sports/espn";
+import { getSlate, type Fixture } from "@/lib/sports/espn";
 import { LEAGUES } from "@/lib/sports/leagues";
 import type { Market } from "@/lib/panta/schemas";
 import { safe } from "@/lib/data/safe";
@@ -15,7 +15,7 @@ import { CallCard } from "@/components/social/call-card";
 import { isDbConfigured } from "@/lib/db";
 import { listCalls } from "@/lib/social";
 
-export const revalidate = 60;
+export const revalidate = 30;
 
 function Ticker({ markets }: { markets: Market[] }) {
   if (markets.length === 0) return null;
@@ -37,6 +37,38 @@ function Ticker({ markets }: { markets: Market[] }) {
       <div className="pointer-events-none absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-ink to-transparent" />
       <div className="pointer-events-none absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-ink to-transparent" />
     </div>
+  );
+}
+
+function GameTile({ f }: { f: Fixture }) {
+  const live = f.state === "in";
+  return (
+    <Link href={`/desks/${f.league}`} className="card card-hover w-56 shrink-0 snap-start p-4">
+      <div className="flex items-center justify-between gap-2 text-[11px] font-semibold uppercase tracking-wider">
+        <span className="text-paper-mute">{f.leagueLabel}</span>
+        {live ? (
+          <span className="truncate normal-case tracking-normal text-live">{f.statusDetail || "Live"}</span>
+        ) : (
+          <span className="text-accent"><LocalTime iso={f.startsAt} /></span>
+        )}
+      </div>
+      {[f.away, f.home].map((p, n) =>
+        p ? (
+          <div key={n} className="mt-3 flex items-center justify-between gap-2">
+            <span className="flex min-w-0 items-center gap-2">
+              {p.logo ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={p.logo} alt="" className="h-6 w-6 shrink-0 object-contain" loading="lazy" />
+              ) : (
+                <span className="h-6 w-6 shrink-0 rounded-full bg-ink-3" aria-hidden="true" />
+              )}
+              <span className="truncate text-sm font-medium">{p.short}</span>
+            </span>
+            {live && p.score !== null ? <span className="font-display font-bold tabular">{p.score}</span> : null}
+          </div>
+        ) : null,
+      )}
+    </Link>
   );
 }
 
@@ -108,9 +140,10 @@ export default async function HomePage() {
     .slice()
     .sort((a, b) => (num(b.volumeUsdc) ?? 0) - (num(a.volumeUsdc) ?? 0))
     .slice(0, 6);
+  const liveGames = fixtures.filter((f) => f.state === "in" && f.home && f.away).slice(0, 12);
   const upcoming = fixtures
-    .filter((f) => f.state !== "post" && f.home && f.away)
-    .sort((a, b) => Number(b.state === "in") - Number(a.state === "in") || a.startsAt.localeCompare(b.startsAt))
+    .filter((f) => f.state === "pre" && f.home && f.away)
+    .sort((a, b) => a.startsAt.localeCompare(b.startsAt))
     .slice(0, 12);
 
   const stats = [
@@ -214,52 +247,38 @@ export default async function HomePage() {
         ))}
       </section>
 
-      {/* Upcoming games */}
-      {upcoming.length > 0 ? (
-        <section className="mx-auto max-w-6xl">
+      {/* Live and upcoming games */}
+      {liveGames.length + upcoming.length > 0 ? (
+        <section className="mx-auto max-w-6xl space-y-8">
           <Reveal>
-            <div className="mb-4 flex items-end justify-between gap-4">
+            <div className="flex items-end justify-between gap-4">
               <div>
                 <p className="text-sm font-semibold text-accent">On the board</p>
-                <h2 className="mt-1 font-display text-3xl font-bold tracking-tight sm:text-4xl">Upcoming games</h2>
+                <h2 className="mt-1 font-display text-3xl font-bold tracking-tight sm:text-4xl">
+                  {liveGames.length > 0 ? "Live now & upcoming" : "Upcoming games"}
+                </h2>
               </div>
               <Link href="/slate" className="shrink-0 text-sm font-semibold text-paper-dim hover:text-paper">Full slate →</Link>
             </div>
           </Reveal>
-          <div className="no-scrollbar -mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2">
-            {upcoming.map((f) => (
-              <Link
-                key={f.id}
-                href={`/desks/${f.league}`}
-                className="card card-hover w-56 shrink-0 snap-start p-4"
-              >
-                <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider">
-                  <span className="text-paper-mute">{f.leagueLabel}</span>
-                  {f.state === "in" ? (
-                    <span className="inline-flex items-center gap-1 text-live"><span className="live-dot h-1.5 w-1.5 rounded-full bg-live" aria-hidden="true" />Live</span>
-                  ) : (
-                    <span className="text-accent"><LocalTime iso={f.startsAt} /></span>
-                  )}
-                </div>
-                {[f.away, f.home].map((p, n) =>
-                  p ? (
-                    <div key={n} className="mt-3 flex items-center justify-between gap-2">
-                      <span className="flex min-w-0 items-center gap-2">
-                        {p.logo ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={p.logo} alt="" className="h-6 w-6 shrink-0 object-contain" loading="lazy" />
-                        ) : (
-                          <span className="h-6 w-6 shrink-0 rounded-full bg-ink-3" aria-hidden="true" />
-                        )}
-                        <span className="truncate text-sm font-medium">{p.short}</span>
-                      </span>
-                      {f.state === "in" && p.score !== null ? <span className="font-display font-bold tabular">{p.score}</span> : null}
-                    </div>
-                  ) : null,
-                )}
-              </Link>
-            ))}
-          </div>
+          {liveGames.length > 0 ? (
+            <div>
+              <p className="mb-3 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-live">
+                <span className="live-dot h-1.5 w-1.5 rounded-full bg-live" aria-hidden="true" /> Live now
+              </p>
+              <div className="no-scrollbar -mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2">
+                {liveGames.map((f) => <GameTile key={f.id} f={f} />)}
+              </div>
+            </div>
+          ) : null}
+          {upcoming.length > 0 ? (
+            <div>
+              <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-paper-mute">Upcoming</p>
+              <div className="no-scrollbar -mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2">
+                {upcoming.map((f) => <GameTile key={f.id} f={f} />)}
+              </div>
+            </div>
+          ) : null}
         </section>
       ) : null}
 
