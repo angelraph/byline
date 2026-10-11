@@ -186,24 +186,24 @@ export default async function BylinePage({ params }: { params: Promise<{ wallet:
         <Stat
           label="Record"
           value={stats.resolved > 0 ? `${stats.wins}–${stats.losses}` : "—"}
-          sub={stats.resolved > 0 ? `${pct(stats.hitRate)} hit rate` : "No resolved calls yet"}
+          sub={stats.resolved > 0 ? `${pct(stats.hitRate)} hit rate` : stats.open > 0 ? "Scores when your first call resolves" : "No resolved calls yet"}
         />
         <Stat
           label="Edge vs market"
           value={stats.edge !== null ? signedPct(stats.edge) : "—"}
-          sub={stats.expectedHitRate !== null ? `Paid for ${pct(stats.expectedHitRate)}, hit ${pct(stats.hitRate)}` : "Beat the odds you paid"}
+          sub={stats.expectedHitRate !== null ? `Paid for ${pct(stats.expectedHitRate)}, hit ${pct(stats.hitRate)}` : "Measured once calls resolve"}
           tone={stats.edge === null ? undefined : stats.edge >= 0 ? "yes" : "no"}
         />
         <Stat
           label="ROI (resolved)"
           value={signedPct(stats.roi)}
-          sub={stats.costResolved > 0 ? `${usdc(stats.payoutResolved)} back on ${usdc(stats.costResolved)}` : undefined}
+          sub={stats.costResolved > 0 ? `${usdc(stats.payoutResolved)} back on ${usdc(stats.costResolved)}` : "From actual payouts, after resolution"}
           tone={stats.roi === null ? undefined : stats.roi >= 0 ? "yes" : "no"}
         />
         <Stat
           label="Streak"
           value={stats.streak ? `${stats.streak.kind === "won" ? "W" : "L"}${stats.streak.count}` : "—"}
-          sub={`${stats.open} open · ${usdc(stats.openValue)} live value`}
+          sub={`${stats.open} open · ${stats.openValueComplete ? usdc(stats.openValue) : stats.openValue > 0 ? `${usdc(stats.openValue)}+` : "valuing…"} live value`}
           tone={stats.streak ? (stats.streak.kind === "won" ? "yes" : "no") : undefined}
         />
       </dl>

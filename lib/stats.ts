@@ -41,6 +41,8 @@ export type BylineStats = {
   open: number;
   openCost: number;
   openValue: number;
+  /** False when some open calls couldn't be valued yet, so openValue is a floor. */
+  openValueComplete: boolean;
   hedgedMarkets: number;
   totalCalls: number;
 };
@@ -187,6 +189,7 @@ export function computeStats(calls: CallRecord[]): BylineStats {
     open: open.length,
     openCost: open.reduce((s, c) => s + (c.cost ?? 0), 0),
     openValue: open.reduce((s, c) => s + (c.currentValue ?? 0), 0),
+    openValueComplete: open.every((c) => c.currentValue !== null),
     hedgedMarkets: new Set(calls.filter((c) => c.hedged).map((c) => c.marketId)).size,
     totalCalls: calls.length,
   };
