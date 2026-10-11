@@ -18,7 +18,7 @@ type Step =
   | { kind: "done"; signature: string; status: OrderVerify["status"]; shares: string; side: Side }
   | { kind: "error"; message: string };
 
-const PRESETS = ["5", "10", "25", "50"];
+const PRESETS = ["1", "5", "10", "25"];
 const SLIPPAGE = [50, 100, 300];
 
 function secondsLeft(expiresAt: string, now: number) {
@@ -43,7 +43,7 @@ export function BuyPanel({
   const { setVisible } = useWalletModal();
 
   const [side, setSide] = useState<Side>(initialSide);
-  const [amount, setAmount] = useState("10");
+  const [amount, setAmount] = useState("5");
   const [slippage, setSlippage] = useState(100);
   const [quote, setQuote] = useState<OrderQuote | null>(null);
   const [quoteError, setQuoteError] = useState<string | null>(null);
@@ -52,6 +52,8 @@ export function BuyPanel({
   const [step, setStep] = useState<Step>({ kind: "idle" });
   const [now, setNow] = useState(() => Date.now());
   const quoteSeq = useRef(0);
+  const amountTouched = useRef(false);
+  const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => setSide(initialSide), [initialSide]);
 
@@ -72,9 +74,17 @@ export function BuyPanel({
     void refreshBalances();
   }, [refreshBalances]);
 
+  // Start from an amount the wallet can actually afford.
+  useEffect(() => {
+    if (!balances || amountTouched.current) return;
+    if (balances.usdc < Number(amount) && balances.usdc >= 1) setAmount(String(Math.floor(balances.usdc)));
+  }, [balances, amount]);
+
   const requestQuote = useCallback(async () => {
-    if (!wallet || !amountValid) {
+    if (retryTimer.current) clearTimeout(retryTimer.current);
+    if (!wallet || !amountValid || (balances !== null && balances.usdc < Number(amount))) {
       setQuote(null);
+      setQuoteError(null);
       return;
     }
     const seq = ++quoteSeq.current;
@@ -86,11 +96,19 @@ export function BuyPanel({
     } catch (err) {
       if (seq !== quoteSeq.current) return;
       setQuote(null);
-      setQuoteError(err instanceof ClientApiError ? explainCode(err.code, err.message) : "Couldn't get a quote.");
+      const flaky = err instanceof ClientApiError && (err.code === "INVALID_MARKET_PARAMS" || err.code === "TIMEOUT" || err.code === "NETWORK");
+      setQuoteError(
+        flaky
+          ? "Panta couldn't price this just now. Retrying…"
+          : err instanceof ClientApiError
+            ? explainCode(err.code, err.message)
+            : "Couldn't get a quote.",
+      );
+      if (flaky) retryTimer.current = setTimeout(() => void requestQuote(), 3000);
     } finally {
       if (seq === quoteSeq.current) setQuoting(false);
     }
-  }, [wallet, amountValid, marketId, side, amount]);
+  }, [wallet, amountValid, marketId, side, amount, balances]);
 
   // Re-quote (debounced) whenever inputs change.
   useEffect(() => {
@@ -99,6 +117,10 @@ export function BuyPanel({
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wallet, side, amount, marketId]);
+
+  useEffect(() => () => {
+    if (retryTimer.current) clearTimeout(retryTimer.current);
+  }, []);
 
   // Countdown, and refresh the quote shortly before it expires.
   useEffect(() => {
@@ -229,13 +251,19 @@ export function BuyPanel({
             autoComplete="off"
             value={amount}
             disabled={busy}
-            onChange={(e) => setAmount(e.target.value.replace(/[^\d.]/g, ""))}
+            onChange={(e) => {
+              amountTouched.current = true;
+              setAmount(e.target.value.replace(/[^\d.]/g, ""));
+            }}
             className="w-full bg-transparent px-2 py-3 font-mono text-lg tabular outline-none"
           />
         </div>
         <div className="mt-2 flex gap-2">
           {PRESETS.map((p) => (
-            <button key={p} type="button" disabled={busy} onClick={() => setAmount(p)} className="flex-1 rounded-lg border border-line py-1.5 font-mono text-xs text-paper-dim hover:border-line-strong hover:text-paper">
+            <button key={p} type="button" disabled={busy} onClick={() => {
+                amountTouched.current = true;
+                setAmount(p);
+              }} className="flex-1 rounded-lg border border-line py-1.5 font-mono text-xs text-paper-dim hover:border-line-strong hover:text-paper">
               ${p}
             </button>
           ))}

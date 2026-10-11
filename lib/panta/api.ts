@@ -1,6 +1,6 @@
 import "server-only";
 import { unstable_cache } from "next/cache";
-import { pantaRequest } from "./client";
+import { PantaError, pantaRequest } from "./client";
 import {
   accountSchema,
   categoriesSchema,
@@ -206,31 +206,53 @@ export function getPositions(wallet: string, opts: { fresh?: boolean } = {}) {
 
 /* ---------- Primary buy (never cached) ---------- */
 
-export function quoteOrder(input: {
+/**
+ * Primary quote. Panta intermittently answers INVALID_MARKET_PARAMS for valid requests
+ * (the same request succeeds moments later), so retry that code a few times. Quotes only
+ * open a short-lived session; retrying is safe.
+ */
+export async function quoteOrder(input: {
   wallet: string;
   marketId: string;
   side: Side;
   amountUsdc: string;
   userId?: string;
 }) {
-  return pantaRequest("/primaryorderquote/", orderQuoteSchema, {
-    method: "POST",
-    body: input,
-    userId: input.userId,
-  });
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await pantaRequest("/primaryorderquote/", orderQuoteSchema, {
+        method: "POST",
+        body: input,
+        userId: input.userId,
+      });
+    } catch (err) {
+      const flaky = err instanceof PantaError && err.code === "INVALID_MARKET_PARAMS" && !err.field;
+      if (!flaky || attempt >= 4) throw err;
+      await new Promise((r) => setTimeout(r, 300 + attempt * 250));
+    }
+  }
 }
 
-export function buildOrder(input: {
+/** Build primary buy instructions, with the same retry on Panta's intermittent bare error. */
+export async function buildOrder(input: {
   quoteId: string;
   wallet: string;
   maxSlippageBps: number;
   userId?: string;
 }) {
-  return pantaRequest("/primaryorderbuild/", orderBuildSchema, {
-    method: "POST",
-    body: input,
-    userId: input.userId,
-  });
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await pantaRequest("/primaryorderbuild/", orderBuildSchema, {
+        method: "POST",
+        body: input,
+        userId: input.userId,
+      });
+    } catch (err) {
+      const flaky = err instanceof PantaError && err.code === "INVALID_MARKET_PARAMS" && !err.field;
+      if (!flaky || attempt >= 3) throw err;
+      await new Promise((r) => setTimeout(r, 300 + attempt * 250));
+    }
+  }
 }
 
 export function submitOrder(input: { orderId: string; signature: string; wallet: string }) {
