@@ -131,7 +131,14 @@ async function compute(): Promise<{ rows: LeaderRow[]; scannedMarkets: number; s
   const refreshed = await mapLimit(candidates, 2, async ([wallet, a]) => {
     if (rateLimited || Date.now() > deadline) throw new Error("Skipped this run");
     try {
-      const p = await getPositions(wallet, { fresh: true, noRetry: true });
+      // One attempt, plus a single retry for Panta's intermittent 400 on valid wallets.
+      const p = await getPositions(wallet, { fresh: true, noRetry: true }).catch(async (err: unknown) => {
+        if (err instanceof PantaError && err.status === 400) {
+          await new Promise((r) => setTimeout(r, 700));
+          return getPositions(wallet, { fresh: true, noRetry: true });
+        }
+        throw err;
+      });
       const row: LeaderRow = { wallet, stats: computeStats(buildCalls(p.positions, [])), trades: a.trades, categories: [...a.categories] };
       await saveStored(row).catch(() => undefined);
       stored.set(wallet, { ...row, updatedAt: new Date().toISOString() });
