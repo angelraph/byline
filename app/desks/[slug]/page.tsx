@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
+import { DeskChat } from "@/components/social/desk-chat";
+import { isDbConfigured } from "@/lib/db";
 import { notFound } from "next/navigation";
 import { getDesk } from "@/lib/desks";
 import { getFixtures, type Fixture } from "@/lib/sports/espn";
@@ -163,6 +165,7 @@ export default async function DeskPage({ params }: { params: Promise<{ slug: str
         </div>
 
         <aside className="space-y-3 lg:sticky lg:top-20 lg:self-start">
+          {isDbConfigured() ? <DeskChat desk={desk.slug} /> : null}
           <SectionHeader kicker="Verified" title={desk.kind === "league" ? "Top sports callers" : `Top ${desk.name} callers`} />
           <Suspense fallback={<p className="text-sm text-paper-mute">Ranking callers…</p>}>
             <DeskCallers category={boardCategory} />

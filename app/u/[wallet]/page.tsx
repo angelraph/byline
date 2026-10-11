@@ -2,12 +2,15 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PublicKey } from "@solana/web3.js";
-import { getPositions, getWalletTrades } from "@/lib/panta/api";
+import { getPositions, getPricedCatalog, getWalletTrades } from "@/lib/panta/api";
 import { safe } from "@/lib/data/safe";
 import { buildCalls, computeStats, type CallRecord } from "@/lib/stats";
-import { cents, pct, relativeTime, shortAddr, signedPct, usdc } from "@/lib/format";
+import { cents, marketTitle, pct, relativeTime, shortAddr, signedPct, usdc } from "@/lib/format";
 import { EmptyState, Notice, SectionHeader } from "@/components/ui";
 import { ShareButton } from "@/components/share-button";
+import { CallCard } from "@/components/social/call-card";
+import { isDbConfigured } from "@/lib/db";
+import { listCalls } from "@/lib/social";
 import { DivisionBadge } from "@/components/division-badge";
 import { divisionFor } from "@/lib/divisions";
 
@@ -107,6 +110,12 @@ export default async function BylinePage({ params }: { params: Promise<{ wallet:
   const { wallet } = await params;
   if (!validWallet(wallet)) notFound();
   const { positions, trades, calls, stats } = await loadByline(wallet);
+  const written = isDbConfigured() ? await listCalls({ wallet, limit: 30 }).catch(() => []) : [];
+  const titles = new Map<string, string>();
+  if (written.length > 0) {
+    const catalog = await safe(() => getPricedCatalog());
+    if (catalog.ok) for (const m of catalog.data) titles.set(m.marketId, marketTitle(m));
+  }
   const fallbackTrades = !positions.ok && trades.ok ? trades.data.items.filter((t) => t.kind === "buy") : [];
 
   const open = calls.filter((c) => c.status === "open");
@@ -234,6 +243,17 @@ export default async function BylinePage({ params }: { params: Promise<{ wallet:
           <ul className="space-y-2">{open.map((c) => <CallRow key={`${c.marketId}-${c.side}`} c={c} />)}</ul>
         )}
       </section>
+
+      {written.length > 0 ? (
+        <section>
+          <SectionHeader kicker="In their words" title={`Written calls (${written.length})`} />
+          <div className="space-y-3">
+            {written.map((c) => (
+              <CallCard key={c.id} call={c} marketTitle={titles.get(c.market_id)} showActions={false} />
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       {settled.length > 0 ? (
         <section>

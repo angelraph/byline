@@ -9,7 +9,10 @@ import { safe } from "@/lib/data/safe";
 import { cents, marketTitle, num, pct, relativeTime, shortAddr, usdc } from "@/lib/format";
 import { Notice, PhaseBadge, SectionHeader } from "@/components/ui";
 import { LocalTime } from "@/components/local-time";
-import { BuyPanel } from "@/components/trade/buy-panel";
+import { TradeAndCall } from "@/components/social/trade-and-call";
+import { MarketFeed } from "@/components/social/market-feed";
+import { isDbConfigured } from "@/lib/db";
+import { getCall } from "@/lib/social";
 import { ShareButton } from "@/components/share-button";
 import { MarketBrief, MarketBriefSkeleton } from "@/components/brief/market-brief";
 
@@ -75,11 +78,16 @@ export default async function MarketPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ side?: string }>;
+  searchParams: Promise<{ side?: string; ref?: string }>;
 }) {
   const { id } = await params;
-  const { side: sideParam } = await searchParams;
+  const { side: sideParam, ref } = await searchParams;
   const initialSide = sideParam === "no" ? "no" : "yes";
+  const socialEnabled = isDbConfigured();
+  // Arriving from someone's call (Back / Fade) links the new call to theirs.
+  const parentCall =
+    socialEnabled && ref && /^[0-9a-f-]{36}$/i.test(ref) ? await getCall(ref).catch(() => null) : null;
+  const parent = parentCall && parentCall.market_id === id ? { id: parentCall.id, wallet: parentCall.wallet, side: parentCall.side } : null;
   const market = await loadMarket(id);
   if (!market) notFound();
 
@@ -153,6 +161,8 @@ export default async function MarketPage({
           <MarketBrief marketId={market.marketId} />
         </Suspense>
 
+        {socialEnabled ? <MarketFeed marketId={market.marketId} /> : null}
+
         <section>
           <SectionHeader kicker="Panta tape" title="Recent trades" />
           {!tape.ok ? (
@@ -184,11 +194,18 @@ export default async function MarketPage({
       </div>
 
       <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start">
-        <div className="rounded-2xl border border-line bg-ink-2 p-5">
+        <div id="back" className="scroll-mt-28 rounded-2xl border border-line bg-ink-2 p-5">
           <p className="font-mono text-[11px] uppercase tracking-wider text-paper-mute">Make the call</p>
           {buyable ? (
             <div className="mt-4">
-              <BuyPanel marketId={market.marketId} yesPrice={market.yesPrice} noPrice={market.noPrice} initialSide={initialSide} />
+              <TradeAndCall
+                marketId={market.marketId}
+                yesPrice={market.yesPrice}
+                noPrice={market.noPrice}
+                initialSide={initialSide}
+                parent={parent}
+                socialEnabled={socialEnabled}
+              />
             </div>
           ) : (
             <p className="mt-2 text-sm text-paper-dim">

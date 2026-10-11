@@ -11,6 +11,9 @@ import { LocalTime } from "@/components/local-time";
 import { Logo } from "@/components/brand";
 import { Reveal } from "@/components/reveal";
 import { FaqList, FAQ_ITEMS } from "@/components/faq";
+import { CallCard } from "@/components/social/call-card";
+import { isDbConfigured } from "@/lib/db";
+import { listCalls } from "@/lib/social";
 
 export const revalidate = 60;
 
@@ -97,6 +100,8 @@ export default async function HomePage() {
   const tickerMarkets = (priced.length >= 3 ? priced : markets.slice(0, 12)).slice(0, 14);
   const totalVolume = markets.reduce((s, m) => s + (num(m.totalVolumeUsdc ?? m.volumeUsdc) ?? 0), 0);
   const fixtures = slate.ok ? slate.data.fixtures : [];
+  const latestCalls = isDbConfigured() ? await listCalls({ limit: 6 }).catch(() => []) : [];
+  const titleById = new Map(markets.map((m) => [m.marketId, marketTitle(m)]));
   const live = fixtures.filter((f) => f.state === "in").length;
   // Spotlight only priced markets when any exist; fall back to the open board otherwise.
   const featured = (priced.length > 0 ? priced : open)
@@ -290,6 +295,28 @@ export default async function HomePage() {
           </div>
         )}
       </section>
+
+      {/* Latest calls */}
+      {latestCalls.length > 0 ? (
+        <section className="mx-auto max-w-6xl">
+          <Reveal>
+            <div className="mb-6 flex items-end justify-between gap-4">
+              <div>
+                <p className="text-sm font-semibold text-accent">On the record</p>
+                <h2 className="mt-1 font-display text-3xl font-bold tracking-tight sm:text-4xl">Latest calls</h2>
+              </div>
+              <Link href="/leaderboard" className="shrink-0 text-sm font-semibold text-paper-dim hover:text-paper">Top callers →</Link>
+            </div>
+          </Reveal>
+          <div className="grid gap-3 md:grid-cols-2">
+            {latestCalls.map((c, i) => (
+              <Reveal key={c.id} delay={i * 50}>
+                <CallCard call={c} marketTitle={titleById.get(c.market_id)} />
+              </Reveal>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       {/* How it works */}
       <section className="mx-auto max-w-6xl">
