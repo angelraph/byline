@@ -22,6 +22,7 @@ Built for the Colosseum Crypto World's Fair · Panta API Sidetrack.
 | **Brief** `/brief` | Paste a headline. AI restates it, finds the open Panta markets already pricing it, and drafts a market you can open in Forge. |
 | **Book** `/portfolio` | Your positions, **claim winnings**, and **claim creator fees** on markets you forged. |
 | **Share cards** | Every byline and market renders a live Open Graph card with the real numbers. |
+| **Calls & social** | Sign in with your wallet (one free signature) to attach a thesis to a call, **back** or **fade** someone else's call, discuss markets, and chat in desk rooms. Verified calls are checked on-chain; paper calls are stamped at a real Panta quote and never count toward records. |
 
 ## Panta integration
 
@@ -64,7 +65,11 @@ node scripts/get-panta-key.mjs   # creates your Panta account + key and writes .
 npm run dev
 ```
 
-Fill the rest of `.env.local` from `.env.example` (Solana RPC, optional OpenAI key, `CRON_SECRET`).
+Fill the rest of `.env.local` from `.env.example` (Solana RPC, optional OpenAI key). For the social layer, add a Postgres `DATABASE_URL` (Vercel → Storage → Neon fills it in) and create the tables once:
+
+```bash
+node --env-file=.env.local scripts/migrate.mjs
+```
 
 ## Deploy (Vercel)
 
@@ -74,4 +79,4 @@ Fill the rest of `.env.local` from `.env.example` (Solana RPC, optional OpenAI k
 
 ## Stack
 
-Next.js 15 (App Router, RSC) · TypeScript strict · Tailwind 4 · zod-validated API responses · Solana web3.js + Wallet Adapter (Wallet Standard autodetect) · OpenAI structured outputs · ESPN public scoreboard.
+Next.js 15 (App Router, RSC) · TypeScript strict · Tailwind 4 · zod-validated API responses · Solana web3.js + Wallet Adapter (Wallet Standard autodetect) · Postgres on Neon · Sign-In-With-Solana sessions · OpenAI structured outputs · ESPN public scoreboard.
