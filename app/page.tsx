@@ -28,7 +28,7 @@ function GameTile({ f }: { f: Fixture }) {
           <span className="text-accent"><LocalTime iso={f.startsAt} /></span>
         )}
       </div>
-      {[f.away, f.home].map((p, n) =>
+      {[f.home, f.away].map((p, n) =>
         p ? (
           <div key={n} className="mt-3 flex items-center justify-between gap-2">
             <span className="flex min-w-0 items-center gap-2">

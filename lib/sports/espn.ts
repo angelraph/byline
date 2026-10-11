@@ -169,10 +169,8 @@ export async function getFixtures(league: LeagueKey, dates?: string): Promise<Fi
       const away = comp.competitors.find((c) => c.homeAway === "away") ?? comp.competitors[1];
       const homeP = home ? toParticipant(home) : null;
       const awayP = away ? toParticipant(away) : null;
-      const name =
-        meta.perCompetition && homeP && awayP
-          ? `${awayP.name} vs ${homeP.name}`
-          : event.name;
+      // Home team first ("Liverpool vs Manchester City"), the way fans say it.
+      const name = homeP && awayP ? `${homeP.name} vs ${awayP.name}` : event.name;
       fixtures.push({
         id: `${league}-${comp.id}`,
         league,

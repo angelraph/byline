@@ -67,8 +67,8 @@ export function FixtureCard({ fixture, markets, forgeHref }: { fixture: Fixture;
         )}
       </header>
       <div className="space-y-2">
-        <Side p={fixture.away} showScore={showScore} />
         <Side p={fixture.home} showScore={showScore} />
+        <Side p={fixture.away} showScore={showScore} />
       </div>
       {fixture.venue ? <p className="mt-2 truncate text-xs text-paper-mute">{fixture.venue}</p> : null}
       <div className="mt-4 space-y-2 border-t border-line pt-3">

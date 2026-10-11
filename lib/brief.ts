@@ -141,7 +141,7 @@ function describeFixture(f: Fixture): string {
   const score =
     f.state !== "pre" && f.home?.score != null && f.away?.score != null ? ` Score: ${f.home.name} ${f.home.score}, ${f.away.name} ${f.away.score}.` : "";
   const status = f.state === "pre" ? "not started" : f.state === "in" ? `live (${f.statusDetail})` : `finished (${f.statusDetail || "final"})`;
-  return `${f.away?.name ?? "?"} at ${f.home?.name ?? "?"}, ${f.leagueLabel}, kickoff ${when}${f.venue ? `, ${f.venue}` : ""}. Status: ${status}.${score}`;
+  return `${f.home?.name ?? "?"} vs ${f.away?.name ?? "?"} (${f.home?.name ?? "?"} at home), ${f.leagueLabel}, kickoff ${when}${f.venue ? `, ${f.venue}` : ""}. Status: ${status}.${score}`;
 }
 
 export async function briefHeadline(text: string) {
@@ -188,7 +188,7 @@ export async function briefHeadline(text: string) {
     ? {
         id: primary.id,
         league: primary.leagueLabel,
-        name: `${primary.away?.name ?? "?"} at ${primary.home?.name ?? "?"}`,
+        name: `${primary.home?.name ?? "?"} vs ${primary.away?.name ?? "?"}`,
         startsAt: primary.startsAt,
         state: primary.state,
         statusDetail: primary.statusDetail,

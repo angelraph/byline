@@ -30,7 +30,7 @@ export default async function ForgePage({
   const templates = f ? templatesFor(f, nowSec) : [];
   const tradable = f ? timesFor(f, nowSec).tradable : true;
   const categories = cats.ok ? cats.data.categories : FALLBACK_CATEGORIES;
-  const label = f && f.home && f.away ? `${f.away.name} at ${f.home.name}` : null;
+  const label = f && f.home && f.away ? `${f.home.name} vs ${f.away.name}` : null;
 
   // Drafts handed over from Brief arrive as query params.
   const initial = blankDraft(nowSec);
