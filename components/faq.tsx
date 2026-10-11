@@ -26,12 +26,12 @@ export const FAQ_ITEMS: FaqItem[] = [
   {
     group: "Trading",
     q: "Can I sell before the market resolves?",
-    a: "Not through BYLINE. Panta's API supports buying primary positions, so a call is held to resolution. That's what makes it a receipt: you can't quietly exit a bad call. To change your view, take the other side.",
+    a: "Not through BYLINE. Panta's API supports buying primary positions, so a call is held to resolution. That's what makes it a receipt: you can't quietly exit a bad call. To change your view, bet on the other side.",
   },
   {
     group: "Trading",
     q: "How do I get paid when I win?",
-    a: "When a market resolves in your favour, open your Book and press Claim winnings. The payout goes straight to your wallet.",
+    a: "When a market resolves in your favour, open My bets and press Claim winnings. The payout goes straight to your wallet.",
   },
   {
     group: "Records",
@@ -57,7 +57,7 @@ export const FAQ_ITEMS: FaqItem[] = [
   {
     group: "Creators",
     q: "Do creators earn anything?",
-    a: "Yes. Panta accrues creator fees on trading. Once your market graduates, claim them from the Markets you forged section of your Book.",
+    a: "Yes. Panta accrues creator fees on trading. Once your market has enough betting, claim them from the Markets you created section of My bets.",
   },
   {
     group: "Safety",

@@ -103,7 +103,7 @@ export function TradeAndCall({
     <div className="space-y-4">
       {parent ? (
         <p className="rounded-xl bg-accent-soft px-3 py-2 text-xs text-paper">
-          {relation} <span className="font-mono font-semibold">{shortAddr(parent.wallet)}</span>&apos;s {parent.side.toUpperCase()} call
+          {relation === "Backing" ? "Copying" : "Betting against"} <span className="font-mono font-semibold">{shortAddr(parent.wallet)}</span>&apos;s {parent.side.toUpperCase()} pick
         </p>
       ) : null}
 
@@ -118,7 +118,7 @@ export function TradeAndCall({
               onClick={() => setMode(m)}
               className={`rounded-full py-1.5 transition ${mode === m ? "bg-accent text-accent-ink" : "text-paper-dim hover:text-paper"}`}
             >
-              {m === "back" ? "Back it on-chain" : "Paper call"}
+              {m === "back" ? "Real bet" : "Free pick"}
             </button>
           ))}
         </div>
@@ -130,9 +130,9 @@ export function TradeAndCall({
           {fill && socialEnabled && !posted ? (
             <div className="border-t border-line pt-4">
               <ThesisForm
-                label="Add your thesis so it shows on your byline (optional)"
-                placeholder="Why this side? Form, injuries, the number, the vibe…"
-                submitLabel="Post call"
+                label="Add your reason (optional). It shows with your bet on your record."
+                placeholder="Why this side? Form, injuries, a hunch…"
+                submitLabel="Post my reason"
                 required={false}
                 onSubmit={(thesis) =>
                   postCall({
@@ -147,10 +147,10 @@ export function TradeAndCall({
               />
             </div>
           ) : null}
-          {posted ? <p className="text-sm text-yes">Your call is live on this market and your byline.</p> : null}
+          {posted ? <p className="text-sm text-yes">Posted. Your reason shows with your bet.</p> : null}
         </>
       ) : posted ? (
-        <p className="text-sm text-yes">Paper call posted. Back it on-chain any time to make it count.</p>
+        <p className="text-sm text-yes">Free pick posted. Switch to Real bet any time to make it count.</p>
       ) : (
         <PaperCall initialSide={initialSide} yesPrice={yesPrice} noPrice={noPrice} onPost={(side, thesis) => postCall({ side, thesis })} />
       )}
@@ -173,7 +173,7 @@ function PaperCall({
   return (
     <div className="space-y-3">
       <p className="text-xs text-paper-dim">
-        No funds needed. Your call is stamped at the live price and shown as <strong className="text-paper">Paper</strong>. It never counts toward your verified record.
+        No money needed. Your pick is saved at today&apos;s odds and shown as a <strong className="text-paper">free pick</strong>. Only real bets count toward your record.
       </p>
       <div className="grid grid-cols-2 gap-2">
         {(["yes", "no"] as const).map((s) => (
@@ -184,11 +184,11 @@ function PaperCall({
             aria-pressed={side === s}
             className={`rounded-xl border px-3 py-2 text-left text-sm font-semibold ${side === s ? (s === "yes" ? "border-yes bg-yes-bg text-yes" : "border-no bg-no-bg text-no") : "border-line text-paper-dim"}`}
           >
-            {s.toUpperCase()} {(s === "yes" ? yesPrice : noPrice) ? `${Math.round(Number(s === "yes" ? yesPrice : noPrice) * 100)}¢` : ""}
+            {s.toUpperCase()} {(s === "yes" ? yesPrice : noPrice) ? (1 / Number(s === "yes" ? yesPrice : noPrice)).toFixed(2) : ""}
           </button>
         ))}
       </div>
-      <ThesisForm label="Your thesis" placeholder="Make the case. It's public and timestamped." submitLabel="Post paper call" required onSubmit={(t) => onPost(side, t)} />
+      <ThesisForm label="Why this side?" placeholder="Your reason. It's public and time-stamped." submitLabel="Post free pick" required onSubmit={(t) => onPost(side, t)} />
     </div>
   );
 }

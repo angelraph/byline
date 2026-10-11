@@ -52,10 +52,10 @@ export function WalletButton({ compact = false }: { compact?: boolean }) {
       {open ? (
         <div className="absolute right-0 z-50 mt-2 w-48 overflow-hidden rounded-xl border border-line bg-ink-2 text-sm shadow-xl">
           <Link href={`/u/${addr}`} onClick={() => setOpen(false)} className="block px-4 py-3 hover:bg-ink-3">
-            My byline
+            My record
           </Link>
           <Link href="/portfolio" onClick={() => setOpen(false)} className="block px-4 py-3 hover:bg-ink-3">
-            Book
+            My bets
           </Link>
           <button
             type="button"

@@ -6,7 +6,7 @@ import { getMarketMerged, getMarketTrades, isBuyable } from "@/lib/panta/api";
 import { PantaError } from "@/lib/panta/client";
 import type { Market, Trade } from "@/lib/panta/schemas";
 import { safe } from "@/lib/data/safe";
-import { cents, marketTitle, num, pct, relativeTime, shortAddr, usdc } from "@/lib/format";
+import { odds, marketTitle, num, pct, relativeTime, shortAddr, usdc } from "@/lib/format";
 import { Notice, PhaseBadge, SectionHeader } from "@/components/ui";
 import { LocalTime } from "@/components/local-time";
 import { TradeAndCall } from "@/components/social/trade-and-call";
@@ -36,7 +36,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const title = marketTitle(m.data);
   return {
     title,
-    description: `YES ${cents(m.data.yesPrice)} · NO ${cents(m.data.noPrice)} on Panta. Make the call on Byline.`,
+    description: `YES ${odds(m.data.yesPrice)} · NO ${odds(m.data.noPrice)} on Panta. Make the call on Byline.`,
   };
 }
 
@@ -127,7 +127,7 @@ export default async function MarketPage({
           {market.description ? <p className="max-w-3xl text-paper-dim">{market.description}</p> : null}
           <ShareButton
             path={`/m/${market.marketId}`}
-            text={`${marketTitle(market)} YES ${cents(market.yesPrice)} / NO ${cents(market.noPrice)}. Make the call on Byline.`}
+            text={`${marketTitle(market)} YES ${odds(market.yesPrice)} / NO ${odds(market.noPrice)}. Make the call on Byline.`}
           />
         </header>
 
@@ -141,11 +141,13 @@ export default async function MarketPage({
               <div className="flex items-end justify-between font-mono tabular">
                 <div>
                   <p className="text-[11px] uppercase tracking-wider text-paper-mute">Yes</p>
-                  <p className="text-4xl text-yes">{cents(yes)}</p>
+                  <p className="text-4xl text-yes">{odds(yes)}</p>
+                  <p className="text-xs text-paper-mute">{pct(yes)} chance</p>
                 </div>
                 <div className="text-right">
                   <p className="text-[11px] uppercase tracking-wider text-paper-mute">No</p>
-                  <p className="text-4xl text-no">{cents(no)}</p>
+                  <p className="text-4xl text-no">{odds(no)}</p>
+                  <p className="text-xs text-paper-mute">{pct(no)} chance</p>
                 </div>
               </div>
               <div className="mt-4 flex h-2 overflow-hidden rounded-full bg-ink-3" role="img" aria-label={`Market implies ${pct(yes)} yes`}>
@@ -201,7 +203,7 @@ export default async function MarketPage({
 
       <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start">
         <div id="back" className="scroll-mt-28 rounded-2xl border border-line bg-ink-2 p-5">
-          <p className="font-mono text-[11px] uppercase tracking-wider text-paper-mute">Make the call</p>
+          <p className="text-sm font-semibold">Your bet</p>
           {buyable ? (
             <div className="mt-4">
               <TradeAndCall
@@ -216,8 +218,8 @@ export default async function MarketPage({
           ) : (
             <p className="mt-2 text-sm text-paper-dim">
               {market.resolved
-                ? "Resolved. Holders of the winning side can claim from their Book."
-                : "This market has graduated from the primary curve, so new positions can't be opened through Byline."}
+                ? "Settled. If you backed the winning side, collect it from My bets."
+                : "Betting has closed on this market. The result is on its way."}
             </p>
           )}
         </div>

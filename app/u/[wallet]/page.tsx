@@ -5,7 +5,7 @@ import { PublicKey } from "@solana/web3.js";
 import { getPositions, getPricedCatalog, getWalletTrades } from "@/lib/panta/api";
 import { safe } from "@/lib/data/safe";
 import { buildCalls, computeStats, type CallRecord } from "@/lib/stats";
-import { cents, marketTitle, pct, relativeTime, shortAddr, signedPct, usdc } from "@/lib/format";
+import { odds, marketTitle, pct, relativeTime, shortAddr, signedPct, usdc } from "@/lib/format";
 import { EmptyState, Notice, SectionHeader } from "@/components/ui";
 import { ShareButton } from "@/components/share-button";
 import { CallCard } from "@/components/social/call-card";
@@ -95,7 +95,7 @@ function CallRow({ c }: { c: CallRecord }) {
           <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-xs tabular text-paper-dim">
             <span className={c.side === "yes" ? "text-yes" : "text-no"}>{c.side.toUpperCase()}</span>
             <span>{c.shares.toFixed(2)} sh</span>
-            {c.entryPrice !== null ? <span>@ {cents(c.entryPrice)}</span> : null}
+            {c.entryPrice !== null ? <span>at {odds(c.entryPrice)}</span> : null}
             {c.cost !== null && c.cost > 0 ? <span>{c.hedged ? "market cost" : "cost"} {usdc(c.cost)}</span> : null}
             <span className="text-paper">{result}</span>
             {c.hedged ? <span className="text-accent">hedged · not scored</span> : null}
@@ -127,13 +127,13 @@ export default async function BylinePage({ params }: { params: Promise<{ wallet:
     <div className="space-y-8">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-accent">Byline · verified on Panta</p>
+          <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-accent">Track record · verified on Panta</p>
           <div className="mt-2 flex flex-wrap items-center gap-3">
             <h1 className="break-all font-display text-3xl font-bold sm:text-4xl">{shortAddr(wallet, 6)}</h1>
             {positions.ok ? <DivisionBadge d={divisionFor(stats)} size="md" /> : null}
           </div>
           <p className="mt-1 text-sm text-paper-dim">
-            Every call below is an on-chain Panta position. Outcomes and payouts come from the chain, not from this page.
+            Every bet here is real money on Panta, checked on Solana. Wins and losses come from the results, not from this page.
           </p>
         </div>
         <div className="flex flex-wrap gap-2 self-start sm:self-auto">
@@ -189,13 +189,13 @@ export default async function BylinePage({ params }: { params: Promise<{ wallet:
           sub={stats.resolved > 0 ? `${pct(stats.hitRate)} hit rate` : stats.open > 0 ? "Scores when your first call resolves" : "No resolved calls yet"}
         />
         <Stat
-          label="Edge vs market"
+          label="Beat the odds"
           value={stats.edge !== null ? signedPct(stats.edge) : "—"}
           sub={stats.expectedHitRate !== null ? `Paid for ${pct(stats.expectedHitRate)}, hit ${pct(stats.hitRate)}` : "Measured once calls resolve"}
           tone={stats.edge === null ? undefined : stats.edge >= 0 ? "yes" : "no"}
         />
         <Stat
-          label="ROI (resolved)"
+          label="Profit"
           value={signedPct(stats.roi)}
           sub={stats.costResolved > 0 ? `${usdc(stats.payoutResolved)} back on ${usdc(stats.costResolved)}` : "From actual payouts, after resolution"}
           tone={stats.roi === null ? undefined : stats.roi >= 0 ? "yes" : "no"}
@@ -234,10 +234,10 @@ export default async function BylinePage({ params }: { params: Promise<{ wallet:
       ) : null}
 
       <section>
-        <SectionHeader kicker="Live" title={`Open calls (${open.length})`} />
+        <SectionHeader kicker="Live" title={`Open bets (${open.length})`} />
         {open.length === 0 ? (
           <EmptyState
-            title="No open calls"
+            title="No open bets"
             body="Back a market from the Slate and it shows up here the moment it lands on-chain."
             action={<Link href="/slate" className="rounded-full bg-accent px-4 py-2 text-sm font-semibold text-accent-ink">Open the Slate</Link>}
           />
@@ -248,7 +248,7 @@ export default async function BylinePage({ params }: { params: Promise<{ wallet:
 
       {written.length > 0 ? (
         <section>
-          <SectionHeader kicker="In their words" title={`Written calls (${written.length})`} />
+          <SectionHeader kicker="In their words" title={`Picks with reasons (${written.length})`} />
           <div className="space-y-3">
             {written.map((c) => (
               <CallCard key={c.id} call={c} marketTitle={titles.get(c.market_id)} showActions={false} />

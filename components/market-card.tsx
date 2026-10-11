@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Market } from "@/lib/panta/schemas";
-import { marketTitle, num, relativeTime, usdc } from "@/lib/format";
+import { marketTitle, num, odds, relativeTime, usdc } from "@/lib/format";
 
 /** Market tile in the style of modern prediction apps: chance first, one-tap sides. */
 export function MarketCard({ m, buyable }: { m: Market; buyable: boolean }) {
@@ -39,13 +39,13 @@ export function MarketCard({ m, buyable }: { m: Market; buyable: boolean }) {
               href={`/m/${m.marketId}?side=yes`}
               className="rounded-lg bg-yes-bg py-2 text-center text-sm font-semibold text-yes transition hover:bg-yes hover:text-ink"
             >
-              Yes {Math.round(yes * 100)}¢
+              Yes {odds(yes)}
             </Link>
             <Link
               href={`/m/${m.marketId}?side=no`}
               className="rounded-lg bg-no-bg py-2 text-center text-sm font-semibold text-no transition hover:bg-no hover:text-ink"
             >
-              No {Math.round(no * 100)}¢
+              No {odds(no)}
             </Link>
           </>
         ) : (

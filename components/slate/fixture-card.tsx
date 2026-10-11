@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Fixture, Participant } from "@/lib/sports/espn";
 import type { Market } from "@/lib/panta/schemas";
-import { cents, marketTitle, usdc } from "@/lib/format";
+import { odds, marketTitle, usdc } from "@/lib/format";
 import { LiveBadge, PhaseBadge } from "@/components/ui";
 import { LocalTime } from "@/components/local-time";
 
@@ -39,8 +39,8 @@ function MarketLine({ m }: { m: Market }) {
       <div className="mt-2 flex items-center gap-2 font-mono text-xs tabular">
         {open ? (
           <>
-            <span className="rounded-md bg-yes-bg px-2 py-1 text-yes">YES {cents(m.yesPrice)}</span>
-            <span className="rounded-md bg-no-bg px-2 py-1 text-no">NO {cents(m.noPrice)}</span>
+            <span className="rounded-md bg-yes-bg px-2 py-1 text-yes">YES {odds(m.yesPrice)}</span>
+            <span className="rounded-md bg-no-bg px-2 py-1 text-no">NO {odds(m.noPrice)}</span>
           </>
         ) : null}
         <span className="ml-auto text-paper-mute">{usdc(m.volumeUsdc ?? m.totalVolumeUsdc, { compact: true })} vol</span>

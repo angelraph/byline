@@ -7,7 +7,7 @@ import type { Market } from "@/lib/panta/schemas";
 import { safe } from "@/lib/data/safe";
 import { FixtureCard } from "@/components/slate/fixture-card";
 import { EmptyState, Notice, SectionHeader } from "@/components/ui";
-import { cents, marketTitle, usdc } from "@/lib/format";
+import { odds, marketTitle, usdc } from "@/lib/format";
 
 export const revalidate = 30;
 
@@ -186,8 +186,8 @@ export default async function SlatePage({
                     <p className="font-mono text-[10px] uppercase tracking-wider text-paper-mute">{m.category}</p>
                     <p className="mt-1 line-clamp-2 text-sm">{marketTitle(m)}</p>
                     <p className="mt-2 flex gap-2 font-mono text-xs tabular">
-                      <span className="text-yes">YES {cents(m.yesPrice)}</span>
-                      <span className="text-no">NO {cents(m.noPrice)}</span>
+                      <span className="text-yes">YES {odds(m.yesPrice)}</span>
+                      <span className="text-no">NO {odds(m.noPrice)}</span>
                       <span className="ml-auto text-paper-mute">{usdc(m.volumeUsdc, { compact: true })}</span>
                     </p>
                   </Link>

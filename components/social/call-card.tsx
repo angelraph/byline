@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { cents, relativeTime, shortAddr } from "@/lib/format";
+import { odds, relativeTime, shortAddr } from "@/lib/format";
 
 export type CallView = {
   id: string;
@@ -37,15 +37,15 @@ export function CallCard({
           {shortAddr(call.wallet)}
         </Link>
         <span className={`rounded-full px-2 py-0.5 font-semibold ${yes ? "bg-yes-bg text-yes" : "bg-no-bg text-no"}`}>
-          {call.stance ? `${call.stance === "back" ? "Backed" : "Faded"} · ` : ""}
+          {call.stance ? `${call.stance === "back" ? "Copied" : "Against"} · ` : ""}
           {call.side.toUpperCase()}
-          {call.entry_price !== null ? ` @ ${cents(call.entry_price)}` : ""}
+          {call.entry_price !== null ? ` at ${odds(call.entry_price)}` : ""}
         </span>
         {call.kind === "verified" ? (
-          <span className="rounded-full bg-accent-soft px-2 py-0.5 font-semibold text-accent">On-chain</span>
+          <span className="rounded-full bg-accent-soft px-2 py-0.5 font-semibold text-accent">Real bet</span>
         ) : (
-          <span className="rounded-full bg-ink-3 px-2 py-0.5 font-medium text-paper-dim" title="Paper calls are priced at the live line but not backed by a position. They never count toward a byline's record.">
-            Paper
+          <span className="rounded-full bg-ink-3 px-2 py-0.5 font-medium text-paper-dim" title="Free picks are saved at the odds of the moment but have no money behind them, so they never count toward a record.">
+            Free pick
           </span>
         )}
         <span className="ml-auto text-paper-mute">{relativeTime(call.created_at)}</span>
@@ -63,7 +63,7 @@ export function CallCard({
           </a>
         ) : null}
         <span>
-          {call.backs} back{call.backs === 1 ? "" : "s"} · {call.fades} fade{call.fades === 1 ? "" : "s"}
+          {call.backs} cop{call.backs === 1 ? "y" : "ies"} · {call.fades} against
         </span>
         {showActions && !own ? (
           <span className="ml-auto flex gap-2">
@@ -71,13 +71,13 @@ export function CallCard({
               href={`/m/${call.market_id}?side=${call.side}&ref=${call.id}#back`}
               className={`rounded-lg px-3 py-1.5 font-semibold transition ${yes ? "bg-yes-bg text-yes hover:bg-yes hover:text-ink" : "bg-no-bg text-no hover:bg-no hover:text-ink"}`}
             >
-              Back
+              Copy bet
             </Link>
             <Link
               href={`/m/${call.market_id}?side=${yes ? "no" : "yes"}&ref=${call.id}#back`}
               className="rounded-lg bg-ink-3 px-3 py-1.5 font-semibold text-paper-dim transition hover:text-paper"
             >
-              Fade
+              Bet against
             </Link>
           </span>
         ) : null}

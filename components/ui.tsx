@@ -53,8 +53,8 @@ export function LiveBadge() {
 export function PhaseBadge({ phase }: { phase: string }) {
   const map: Record<string, { label: string; cls: string }> = {
     primary: { label: "Open", cls: "text-yes bg-yes-bg" },
-    secondary: { label: "Graduated", cls: "text-accent bg-accent/10" },
-    resolved: { label: "Resolved", cls: "text-paper-dim bg-ink-3" },
+    secondary: { label: "Bets closed", cls: "text-accent bg-accent/10" },
+    resolved: { label: "Settled", cls: "text-paper-dim bg-ink-3" },
     cancelled: { label: "Cancelled", cls: "text-no bg-no-bg" },
   };
   const v = map[phase] ?? { label: phase, cls: "text-paper-dim bg-ink-3" };

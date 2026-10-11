@@ -322,7 +322,7 @@ export default async function HomePage() {
             <div className="mb-6 flex items-end justify-between gap-4">
               <div>
                 <p className="text-sm font-semibold text-accent">On the record</p>
-                <h2 className="mt-1 font-display text-3xl font-bold tracking-tight sm:text-4xl">Latest calls</h2>
+                <h2 className="mt-1 font-display text-3xl font-bold tracking-tight sm:text-4xl">Latest picks from fans</h2>
               </div>
               <Link href="/leaderboard" className="shrink-0 text-sm font-semibold text-paper-dim hover:text-paper">Top callers →</Link>
             </div>

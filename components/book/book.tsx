@@ -10,7 +10,7 @@ import type { ClaimBuild, CreatorFeesBuild, Market } from "@/lib/panta/schemas";
 import { apiGet, apiPost, ClientApiError, explainCode } from "@/lib/client/api";
 import { classifyTxError } from "@/lib/solana/tx";
 import { useSendInstructions } from "@/lib/solana/use-send-instructions";
-import { cents, fromBaseUnits, marketTitle, pct, shortAddr, signedPct, usdc } from "@/lib/format";
+import { odds, fromBaseUnits, marketTitle, pct, shortAddr, signedPct, usdc } from "@/lib/format";
 import { EmptyState, Notice, SectionHeader } from "@/components/ui";
 
 type PositionsResponse = { calls: CallRecord[]; stats: BylineStats };
@@ -80,7 +80,7 @@ function ClaimFees({ wallet, market }: { wallet: string; market: Market }) {
       <div className="min-w-0">
         <Link href={`/m/${market.marketId}`} className="line-clamp-1 text-sm hover:underline">{marketTitle(market)}</Link>
         <p className="mt-1 font-mono text-xs text-paper-mute">
-          {market.isGraduated ? "Graduated · fees unlocked" : "Fees unlock when the market graduates"}
+          {market.isGraduated ? "Your creator fees are ready to collect" : "Creator fees unlock once the market has enough betting"}
         </p>
         {state.kind === "error" ? <p className="mt-1 text-xs text-no">{state.msg}</p> : null}
       </div>
@@ -120,7 +120,7 @@ export function Book() {
   if (!wallet) {
     return (
       <EmptyState
-        title="Connect a wallet to open your Book"
+        title="Connect your wallet to see your bets"
         body="Your positions, winnings to claim, and creator fees, all read from Panta for the connected wallet."
         action={
           <button type="button" onClick={() => setVisible(true)} className="rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-accent-ink">
@@ -140,11 +140,11 @@ export function Book() {
     <div className="space-y-8">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-accent">Book</p>
-          <h1 className="mt-1 font-display text-3xl font-semibold">Your positions</h1>
+          <p className="text-sm font-semibold text-accent">Your wallet</p>
+          <h1 className="mt-1 font-display text-3xl font-semibold">My bets</h1>
         </div>
         <Link href={`/u/${wallet}`} className="rounded-full border border-line-strong px-4 py-2 text-sm hover:border-paper-mute">
-          Public byline · {shortAddr(wallet)}
+          My public record · {shortAddr(wallet)}
         </Link>
       </div>
 
@@ -199,7 +199,7 @@ export function Book() {
       ) : null}
 
       <section>
-        <SectionHeader kicker="Live" title={`Open positions (${open.length})`} />
+        <SectionHeader kicker="Live" title={`Open bets (${open.length})`} />
         {open.length === 0 && !positions.isLoading ? (
           <EmptyState
             title="Nothing open"
@@ -215,7 +215,7 @@ export function Book() {
                     <p className="line-clamp-1 text-sm">{c.title || `Market ${shortAddr(c.marketId)}`}</p>
                     <p className="mt-1 font-mono text-xs text-paper-dim">
                       <span className={c.side === "yes" ? "text-yes" : "text-no"}>{c.side.toUpperCase()}</span> · {c.shares.toFixed(2)} sh
-                      {c.entryPrice !== null ? ` @ ${cents(c.entryPrice)}` : ""}
+                      {c.entryPrice !== null ? ` at ${odds(c.entryPrice)}` : ""}
                     </p>
                   </div>
                   <div className="text-right font-mono text-sm tabular">
@@ -234,7 +234,7 @@ export function Book() {
       </section>
 
       <section>
-        <SectionHeader kicker="Creator" title="Markets you forged" />
+        <SectionHeader kicker="Creator" title="Markets you created" />
         {created.error ? (
           <Notice tone="warn">Couldn&apos;t load your created markets right now.</Notice>
         ) : (created.data?.markets.length ?? 0) === 0 ? (

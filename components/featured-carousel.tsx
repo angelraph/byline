@@ -83,12 +83,12 @@ export function FeaturedCarousel({ markets }: { markets: Market[] }) {
             </div>
             <div className="mt-5 grid grid-cols-2 gap-3">
               <Link href={`/m/${m.marketId}?side=yes`} className="rounded-xl bg-yes-bg px-4 py-3 transition hover:bg-yes hover:text-ink">
-                <span className="block text-sm font-semibold text-yes">Yes {Math.round(yes * 100)}¢</span>
-                <span className="block text-xs text-paper-mute">Odds {(1 / yes).toFixed(2)}×</span>
+                <span className="block text-sm font-semibold text-yes">Yes {(1 / yes).toFixed(2)}</span>
+                <span className="block text-xs text-paper-mute">$1 returns up to ${(1 / yes).toFixed(2)}</span>
               </Link>
               <Link href={`/m/${m.marketId}?side=no`} className="rounded-xl bg-no-bg px-4 py-3 transition hover:bg-no hover:text-ink">
-                <span className="block text-sm font-semibold text-no">No {Math.round(no * 100)}¢</span>
-                <span className="block text-xs text-paper-mute">Odds {(1 / no).toFixed(2)}×</span>
+                <span className="block text-sm font-semibold text-no">No {(1 / no).toFixed(2)}</span>
+                <span className="block text-xs text-paper-mute">$1 returns up to ${(1 / no).toFixed(2)}</span>
               </Link>
             </div>
           </>

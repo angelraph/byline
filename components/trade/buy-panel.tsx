@@ -7,7 +7,7 @@ import type { OrderBuild, OrderQuote, OrderVerify, Side } from "@/lib/panta/sche
 import { apiPost, ClientApiError, explainCode } from "@/lib/client/api";
 import { compileInstructions, sendAndConfirm, classifyTxError, TxError } from "@/lib/solana/tx";
 import { getBalances, MIN_SOL_FOR_TX, type Balances } from "@/lib/solana/balances";
-import { cents, usdc } from "@/lib/format";
+import { odds, usdc } from "@/lib/format";
 
 type Step =
   | { kind: "idle" }
@@ -29,7 +29,7 @@ function secondsLeft(expiresAt: string, now: number) {
 function oddsLabel(price: string | null): string | null {
   const n = price === null ? NaN : Number(price);
   if (!Number.isFinite(n) || n <= 0 || n >= 1) return null;
-  return `${(1 / n).toFixed(2)} odds · ${Math.round(n * 100)}% chance`;
+  return `${Math.round(n * 100)}% chance`;
 }
 
 /** What the caller gets back: shown before they sign. */
@@ -229,23 +229,23 @@ export function BuyPanel({
     return (
       <div className="space-y-3">
         <p className="font-mono text-[11px] uppercase tracking-wider text-yes">
-          {step.status === "confirmed" ? "Verified on-chain" : "Landed on-chain · Panta confirming"}
+          {step.status === "confirmed" ? "Bet placed · verified on Solana" : "Bet placed · confirming"}
         </p>
         <p className="font-display text-2xl leading-tight">
-          You hold {Number(step.shares).toFixed(2)} <span className={step.side === "yes" ? "text-yes" : "text-no"}>{step.side.toUpperCase()}</span> shares.
+          You&apos;re on <span className={step.side === "yes" ? "text-yes" : "text-no"}>{step.side.toUpperCase()}</span>. Returns up to {usdc(Number(step.shares))} if it wins.
         </p>
-        <p className="text-sm text-paper-dim">This position is now on your byline. It settles when the market resolves.</p>
+        <p className="text-sm text-paper-dim">It&apos;s on your record now. If it wins, collect from My bets after the result.</p>
         <div className="flex flex-wrap gap-2">
           <a href={`https://solscan.io/tx/${step.signature}`} target="_blank" rel="noreferrer" className="rounded-full border border-line-strong px-4 py-2 text-sm hover:border-paper-mute">
             View receipt ↗
           </a>
           {wallet ? (
             <a href={`/u/${wallet}`} className="rounded-full border border-line-strong px-4 py-2 text-sm hover:border-paper-mute">
-              My byline
+              My record
             </a>
           ) : null}
           <button type="button" onClick={() => setStep({ kind: "idle" })} className="rounded-full px-4 py-2 text-sm text-paper-dim hover:text-paper">
-            Make another
+            Place another
           </button>
         </div>
       </div>
@@ -272,7 +272,7 @@ export function BuyPanel({
             }`}
           >
             <span className={`block text-xs font-semibold uppercase ${s === "yes" ? "text-yes" : "text-no"}`}>{s}</span>
-            <span className="block font-display text-xl font-bold tabular">{cents(s === "yes" ? yesPrice : noPrice)}</span>
+            <span className="block font-display text-xl font-bold tabular">{odds(s === "yes" ? yesPrice : noPrice)}</span>
             {oddsLabel(s === "yes" ? yesPrice : noPrice) ? (
               <span className="mt-0.5 block text-[11px] text-paper-mute">{oddsLabel(s === "yes" ? yesPrice : noPrice)}</span>
             ) : null}
@@ -281,7 +281,7 @@ export function BuyPanel({
       </div>
 
       <p className="text-[11px] leading-relaxed text-paper-mute">
-        The price is the market&apos;s chance: 50¢ ≈ 50%, like 2.00 odds. Each share you buy pays out if your side wins.
+        Odds work like any betting app: 2.00 means $1 returns up to $2 if your side wins.
       </p>
 
       <div>
@@ -323,7 +323,7 @@ export function BuyPanel({
             <dl className="space-y-1.5">
               <ReturnSummary side={side} stake={Number(quote.amountUsdc)} shares={Number(quote.shares)} />
               <div className="flex justify-between"><dt className="text-paper-mute">Shares</dt><dd>{Number(quote.shares).toFixed(2)}</dd></div>
-              <div className="flex justify-between"><dt className="text-paper-mute">Avg price</dt><dd>{cents(quote.avgPrice)}</dd></div>
+              <div className="flex justify-between"><dt className="text-paper-mute">Your odds</dt><dd>{odds(quote.avgPrice)}</dd></div>
               <div className="flex justify-between"><dt className="text-paper-mute">Fee</dt><dd>{usdc(quote.feeUsdc)}</dd></div>
               <div className="flex justify-between pt-1 text-xs text-paper-mute">
                 <dt>Quote refreshes in</dt>
@@ -357,7 +357,7 @@ export function BuyPanel({
 
       {!wallet ? (
         <button type="button" onClick={() => setVisible(true)} className="w-full rounded-xl bg-accent py-3.5 font-semibold text-accent-ink hover:brightness-110">
-          Connect wallet to back it
+          Connect wallet to bet
         </button>
       ) : (
         <button
@@ -374,11 +374,11 @@ export function BuyPanel({
                 ? "Sending to Solana…"
                 : step.kind === "confirming"
                   ? "Confirming with Panta…"
-                  : `Back ${side.toUpperCase()} · ${amountValid ? usdc(amount) : "$0.00"}`}
+                  : `Place bet · ${amountValid ? usdc(amount) : "$0.00"} on ${side.toUpperCase()}`}
         </button>
       )}
       <p className="text-center text-[11px] text-paper-mute">
-        Your wallet signs. Byline never holds your funds. Panta has no sell, so positions are held to resolution.
+        You sign in your own wallet; BYLINE never holds your money. Bets stay open until the result.
       </p>
     </div>
   );

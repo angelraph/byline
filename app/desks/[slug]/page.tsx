@@ -11,7 +11,7 @@ import { getPricedCatalog, isBuyable } from "@/lib/panta/api";
 import type { Market } from "@/lib/panta/schemas";
 import { getLeaderboard, sortRows } from "@/lib/leaderboard";
 import { safe } from "@/lib/data/safe";
-import { cents, marketTitle, shortAddr, signedPct, usdc } from "@/lib/format";
+import { odds, marketTitle, shortAddr, signedPct, usdc } from "@/lib/format";
 import { FixtureCard } from "@/components/slate/fixture-card";
 import { EmptyState, Notice, PhaseBadge, SectionHeader } from "@/components/ui";
 
@@ -38,7 +38,7 @@ function MarketRow({ m }: { m: Market }) {
           <div className="mt-1 flex items-center gap-2"><PhaseBadge phase={m.resolved ? "resolved" : m.phase} /></div>
         </div>
         <div className="shrink-0 text-right font-mono text-xs tabular">
-          {isBuyable(m) ? <p><span className="text-yes">{cents(m.yesPrice)}</span> / <span className="text-no">{cents(m.noPrice)}</span></p> : null}
+          {isBuyable(m) ? <p><span className="text-yes">{odds(m.yesPrice)}</span> / <span className="text-no">{odds(m.noPrice)}</span></p> : null}
           <p className="text-paper-mute">{usdc(m.totalVolumeUsdc ?? m.volumeUsdc, { compact: true })}</p>
         </div>
       </Link>

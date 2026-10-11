@@ -52,7 +52,7 @@ export function MarketFeed({ marketId }: { marketId: string }) {
               onClick={() => setTab(t)}
               className={`border-b-2 px-3 pb-2.5 text-sm font-medium capitalize ${tab === t ? "border-accent text-paper" : "border-transparent text-paper-dim hover:text-paper"}`}
             >
-              {t} <span className="text-paper-mute">({t === "calls" ? callList.length : commentList.length})</span>
+              {t === "calls" ? "Fans' picks" : "Chat"} <span className="text-paper-mute">({t === "calls" ? callList.length : commentList.length})</span>
             </button>
           ))}
         </div>
@@ -65,10 +65,10 @@ export function MarketFeed({ marketId }: { marketId: string }) {
 
       {tab === "calls" ? (
         <div className="mt-4 space-y-3">
-          {calls.isLoading ? <p className="text-sm text-paper-mute">Loading calls…</p> : null}
+          {calls.isLoading ? <p className="text-sm text-paper-mute">Loading picks…</p> : null}
           {!calls.isLoading && callList.length === 0 ? (
             <div className="card p-6 text-center text-sm text-paper-dim">
-              No calls yet. Be the first on the record: back a side and add your thesis{" "}
+              No picks yet. Be the first: place a bet or a free pick{" "}
               <Link href="#back" className="font-semibold text-accent">here</Link>.
             </div>
           ) : null}
@@ -84,7 +84,7 @@ export function MarketFeed({ marketId }: { marketId: string }) {
               maxLength={500}
               value={text}
               onChange={(e) => setText(e.target.value)}
-              placeholder="Add to the discussion"
+              placeholder="Say something about this market"
               aria-label="Comment"
               className="w-full resize-none bg-transparent text-sm outline-none placeholder:text-paper-mute"
             />

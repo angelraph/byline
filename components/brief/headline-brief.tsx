@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import type { Market } from "@/lib/panta/schemas";
 import { apiPost, ClientApiError } from "@/lib/client/api";
-import { cents, marketTitle } from "@/lib/format";
+import { odds, marketTitle } from "@/lib/format";
 
 type Result = {
   summary: string;
@@ -93,7 +93,7 @@ export function HeadlineBrief() {
                     <li key={m.marketId}>
                       <Link href={`/m/${m.marketId}`} className="flex items-center justify-between gap-3 rounded-xl border border-line bg-ink-2 p-3 hover:border-line-strong">
                         <span className="line-clamp-1 text-sm">{marketTitle(m)}</span>
-                        <span className="shrink-0 font-mono text-xs"><span className="text-yes">{cents(m.yesPrice)}</span> / <span className="text-no">{cents(m.noPrice)}</span></span>
+                        <span className="shrink-0 font-mono text-xs"><span className="text-yes">{odds(m.yesPrice)}</span> / <span className="text-no">{odds(m.noPrice)}</span></span>
                       </Link>
                     </li>
                   ))}

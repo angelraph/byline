@@ -22,7 +22,7 @@ const MOBILE = [
   SECTIONS[1],
   SECTIONS[2],
   SECTIONS[6],
-  { href: "/portfolio", label: "Book", icon: "M6 4h10a2 2 0 012 2v14l-7-3-7 3V6a2 2 0 012-2z" },
+  { href: "/portfolio", label: "My bets", icon: "M6 4h10a2 2 0 012 2v14l-7-3-7 3V6a2 2 0 012-2z" },
 ] as const;
 
 function isActive(pathname: string, href: string) {
@@ -73,7 +73,7 @@ export function TopNav() {
         </Suspense>
         <div className="ml-auto flex items-center gap-2">
           <Link href="/portfolio" className="hidden rounded-lg px-3 py-2 text-sm font-medium text-paper-dim hover:text-paper md:inline">
-            Book
+            My bets
           </Link>
           <Link
             href="/forge"

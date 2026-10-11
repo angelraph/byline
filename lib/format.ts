@@ -12,6 +12,13 @@ export function cents(price: string | number | null | undefined): string {
   return `${Math.round(n * 100)}¢`;
 }
 
+/** 0.50 -> "2.00": decimal betting odds (total return per $1 if the side wins). */
+export function odds(price: string | number | null | undefined): string {
+  const n = typeof price === "number" ? price : num(price ?? null);
+  if (n === null || n <= 0 || n >= 1) return "—";
+  return (1 / n).toFixed(2);
+}
+
 /** 0.52 -> "52%" */
 export function pct(price: string | number | null | undefined, digits = 0): string {
   const n = typeof price === "number" ? price : num(price ?? null);

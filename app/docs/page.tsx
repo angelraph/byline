@@ -32,8 +32,8 @@ function Section({ id, title, children }: { id: string; title: string; children:
 const ENDPOINTS: [string, string][] = [
   ["GET /markets/, /markets/{id}/, /categories/", "Catalog, live prices, phases, Forge categories"],
   ["GET /markets/{id}/trades/", "Trade tape, Markets blotter, leaderboard discovery, AI Brief inputs"],
-  ["GET /wallets/{w}/trades/, /positions/", "Bylines, Book, leaderboard scoring, claim eligibility"],
-  ["POST /primaryorderquote/ → build → submit → verify", "Back YES / NO with live quote and slippage control"],
+  ["GET /wallets/{w}/trades/, /positions/", "Track records, My bets, leaderboard scoring, claim eligibility"],
+  ["POST /primaryorderquote/ → build → submit → verify", "Placing bets with a live quote and slippage control"],
   ["POST /markets/create/quote/ → build → /markets/register/", "Create a market (Forge)"],
   ["POST /markets/create/image-upload/", "Market image upload"],
   ["POST /claim/build/, /claim/creator-fees/build/", "Claim winnings, claim creator fees"],
@@ -67,7 +67,7 @@ export default function DocsPage() {
             protocol on Solana, signed by your wallet and settled by the market. Your <strong>byline</strong> is a public page that scores every call you
             have made, using data read directly from Panta and the chain.
           </p>
-          <p>The app is organised around a few surfaces: the Sports slate, Markets, Fan desks, the Leaderboard, Create market, AI Brief, and your Book.</p>
+          <p>The app is organised around a few surfaces: the Sports slate, Markets, Fan desks, the Leaderboard, Create market, AI Brief, and My bets.</p>
         </Section>
 
         <Section id="getting-started" title="Getting started">
@@ -79,7 +79,7 @@ export default function DocsPage() {
         </Section>
 
         <Section id="making-a-call" title="Making a call">
-          <p>Open any open market and use the <strong>Back</strong> panel:</p>
+          <p>Open any open market and use the <strong>Your bet</strong> panel:</p>
           <ol className="list-decimal space-y-2 pl-5">
             <li>Choose <strong>YES</strong> or <strong>NO</strong> and an amount in USDC.</li>
             <li>BYLINE requests a live quote from Panta: shares, average price, fee and payout. Quotes expire in about 90 seconds and refresh automatically.</li>
@@ -88,7 +88,7 @@ export default function DocsPage() {
           </ol>
           <p>
             Panta&apos;s API supports buying primary positions, not selling, so every call is held to resolution. That&apos;s what makes it a receipt: you can&apos;t
-            quietly exit a bad call. Taking the other side is called a <strong>fade</strong>.
+            quietly exit a bad call. Taking the other side of someone&apos;s pick is called <strong>Bet against</strong>.
           </p>
         </Section>
 
@@ -124,14 +124,14 @@ export default function DocsPage() {
           <ul className="list-disc space-y-2 pl-5">
             <li>Standard markets must open at least one hour in the future. Games starting sooner become <strong>breaking</strong> markets that open immediately.</li>
             <li>You pay Panta&apos;s creation fee, part of which seeds the market&apos;s liquidity. The exact amount is shown before you sign.</li>
-            <li>After it graduates, the market accrues <strong>creator fees</strong> you can claim from your Book.</li>
+            <li>Once it has enough betting, the market accrues <strong>creator fees</strong> you can claim from My bets.</li>
           </ul>
         </Section>
 
         <Section id="claims" title="Claims and payouts">
           <p>
-            When a market resolves, your <Link href="/portfolio" className="text-accent hover:underline">Book</Link> shows positions that are claimable. Press <strong>Claim winnings</strong>,
-            approve in your wallet, and the payout lands in your wallet. Creator fees on graduated markets you created are claimed the same way.
+            When a market resolves, your <Link href="/portfolio" className="text-accent hover:underline">My bets</Link> shows positions that are claimable. Press <strong>Claim winnings</strong>,
+            approve in your wallet, and the payout lands in your wallet. Creator fees on markets you created are claimed the same way.
           </p>
         </Section>
 

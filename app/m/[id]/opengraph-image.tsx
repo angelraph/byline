@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 import { getMarketMerged } from "@/lib/panta/api";
-import { cents, marketTitle, num } from "@/lib/format";
+import { odds, marketTitle, num } from "@/lib/format";
 
 export const alt = "Market on Byline";
 export const size = { width: 1200, height: 630 };
@@ -34,11 +34,11 @@ export default async function Image({ params }: { params: Promise<{ id: string }
         <div style={{ display: "flex", gap: 24 }}>
           <div style={{ display: "flex", flexDirection: "column", flex: 1, borderRadius: 20, padding: 28, background: "rgba(61,220,151,0.12)", border: "2px solid #3ddc97" }}>
             <span style={{ fontSize: 24, color: "#3ddc97", letterSpacing: 3 }}>YES</span>
-            <span style={{ fontSize: 72, fontWeight: 700, color: "#3ddc97", fontFamily: "monospace" }}>{cents(yes)}</span>
+            <span style={{ fontSize: 72, fontWeight: 700, color: "#3ddc97", fontFamily: "monospace" }}>{odds(yes)}</span>
           </div>
           <div style={{ display: "flex", flexDirection: "column", flex: 1, borderRadius: 20, padding: 28, background: "rgba(255,107,94,0.12)", border: "2px solid #ff6b5e" }}>
             <span style={{ fontSize: 24, color: "#ff6b5e", letterSpacing: 3 }}>NO</span>
-            <span style={{ fontSize: 72, fontWeight: 700, color: "#ff6b5e", fontFamily: "monospace" }}>{cents(no)}</span>
+            <span style={{ fontSize: 72, fontWeight: 700, color: "#ff6b5e", fontFamily: "monospace" }}>{odds(no)}</span>
           </div>
         </div>
       </div>

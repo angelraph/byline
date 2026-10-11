@@ -65,7 +65,7 @@ export default async function WirePage({
   };
 
   const SORT_LABEL: Record<Sort, string> = { volume: "Top", closing: "Closing soon", newest: "New" };
-  const STATUS_LABEL: Record<Filter, string> = { open: "Open", graduated: "Graduated", resolved: "Resolved", all: "All" };
+  const STATUS_LABEL: Record<Filter, string> = { open: "Open", graduated: "Bets closed", resolved: "Settled", all: "All" };
 
   return (
     <div className="space-y-6">
