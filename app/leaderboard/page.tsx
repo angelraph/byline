@@ -15,10 +15,10 @@ export const revalidate = 600;
 export const maxDuration = 60;
 
 const SORTS: { key: SortKey; label: string }[] = [
-  { key: "edge", label: "Edge" },
-  { key: "hit", label: "Hit rate" },
-  { key: "roi", label: "ROI" },
-  { key: "record", label: "Record" },
+  { key: "edge", label: "Beat the odds" },
+  { key: "hit", label: "Win rate" },
+  { key: "roi", label: "Profit" },
+  { key: "record", label: "Most wins" },
 ];
 
 export default async function LeaderboardPage({
@@ -48,15 +48,15 @@ export default async function LeaderboardPage({
   return (
     <div className="space-y-6">
       <header>
-        <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-accent">Leaderboard</p>
-        <h1 className="mt-2 font-display text-4xl font-semibold tracking-tight">Who actually calls it</h1>
+        <p className="text-sm font-semibold text-accent">Leaderboard</p>
+        <h1 className="mt-2 font-display text-4xl font-bold tracking-tight">Who&apos;s actually right</h1>
         <p className="mt-2 max-w-2xl text-paper-dim">
-          Ranked by <strong className="text-paper">edge</strong>: hit rate minus the average odds paid. Winning favourites is easy; beating
-          the price is the skill. Verified positions only, minimum {MIN_RESOLVED} resolved calls, hedged markets excluded.
+          Ranked by how much they <strong className="text-paper">beat the odds</strong>. Anyone can win by backing favourites; winning more often
+          than the odds said you would is the real skill. Only real bets count, after at least {MIN_RESOLVED} settled bets.
         </p>
       </header>
 
-      {!board.ok ? <Notice tone="error">Leaderboard is recalculating: {board.error}</Notice> : null}
+      {!board.ok ? <Notice tone="warn">Rankings are refreshing. Check back in a minute.</Notice> : null}
 
       <div className="flex flex-wrap items-center gap-2">
         {SORTS.map((s) => (
@@ -82,18 +82,18 @@ export default async function LeaderboardPage({
       </div>
 
       {rows.length === 0 ? (
-        <EmptyState title="No qualifying bylines yet" body={`A byline appears here after ${MIN_RESOLVED} resolved, unhedged calls.`} />
+        <EmptyState title="No records yet" body={`A bettor appears here after ${MIN_RESOLVED} settled bets. Rankings fill in as results come in.`} />
       ) : (
         <div className="overflow-hidden rounded-2xl border border-line">
           <table className="w-full text-left text-sm">
             <thead className="bg-ink-2 font-mono text-[10px] uppercase tracking-wider text-paper-mute">
               <tr>
                 <th className="px-3 py-3 font-normal sm:px-4">#</th>
-                <th className="px-2 py-3 font-normal">Byline</th>
+                <th className="px-2 py-3 font-normal">Bettor</th>
                 <th className="px-2 py-3 text-right font-normal">Record</th>
-                <th className="px-2 py-3 text-right font-normal">Edge</th>
-                <th className="hidden px-2 py-3 text-right font-normal sm:table-cell">Hit</th>
-                <th className="hidden px-2 py-3 text-right font-normal sm:table-cell">ROI</th>
+                <th className="px-2 py-3 text-right font-normal">Beat the odds</th>
+                <th className="hidden px-2 py-3 text-right font-normal sm:table-cell">Win rate</th>
+                <th className="hidden px-2 py-3 text-right font-normal sm:table-cell">Profit</th>
                 <th className="hidden px-4 py-3 text-right font-normal md:table-cell">Streak</th>
               </tr>
             </thead>
@@ -123,9 +123,8 @@ export default async function LeaderboardPage({
 
       {board.ok ? (
         <p className="text-xs text-paper-mute">
-          Scanned {board.data.scannedMarkets} markets and {board.data.scannedWallets} most active wallets · updated{" "}
-          {relativeTime(board.data.computedAt)} · refreshes every 10 minutes.
-          {board.data.delayed > 0 ? ` ${board.data.delayed} wallet${board.data.delayed === 1 ? "" : "s"} delayed by Panta and will appear on the next refresh.` : ""}
+          Records from {board.data.scannedWallets} active bettors
+          {board.data.lastConfirmed ? ` · last confirmed ${relativeTime(board.data.lastConfirmed)}` : ""} · more are checked every few minutes.
         </p>
       ) : null}
     </div>

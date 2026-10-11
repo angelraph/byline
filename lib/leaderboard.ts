@@ -1,6 +1,9 @@
 import "server-only";
 import { unstable_cache } from "next/cache";
+import { z } from "zod";
 import { getMarketTrades, getPositions, listAllMarkets } from "@/lib/panta/api";
+import { PantaError } from "@/lib/panta/client";
+import { db, isDbConfigured } from "@/lib/db";
 import { buildCalls, computeStats, type BylineStats } from "@/lib/stats";
 import { num } from "@/lib/format";
 
@@ -31,7 +34,64 @@ export async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T) =>
 
 export const MIN_RESOLVED = 3;
 
-async function compute(): Promise<{ rows: LeaderRow[]; scannedMarkets: number; scannedWallets: number; delayed: number; computedAt: string }> {
+/** Positions requests per scan: Panta allows 60/min per account, shared with live traffic. */
+const REFRESH_PER_RUN = 15;
+
+const nullableNum = z.number().nullable();
+const statsSchema = z.object({
+  resolved: z.number(),
+  wins: z.number(),
+  losses: z.number(),
+  hitRate: nullableNum,
+  expectedHitRate: nullableNum,
+  edge: nullableNum,
+  costResolved: z.number(),
+  payoutResolved: z.number(),
+  roi: nullableNum,
+  streak: z.object({ kind: z.enum(["won", "lost"]), count: z.number() }).nullable(),
+  open: z.number(),
+  openCost: z.number(),
+  openValue: z.number(),
+  openValueComplete: z.boolean().default(true),
+  hedgedMarkets: z.number(),
+  totalCalls: z.number(),
+});
+const storedRowSchema = z.object({
+  wallet: z.string(),
+  stats: statsSchema,
+  categories: z.array(z.string()),
+  trades: z.number(),
+  updated_at: z.union([z.string(), z.date()]).transform((v) => (v instanceof Date ? v.toISOString() : new Date(v).toISOString())),
+});
+
+type Stored = LeaderRow & { updatedAt: string };
+
+async function readStored(): Promise<Map<string, Stored>> {
+  if (!isDbConfigured()) return new Map();
+  const rows = await db()`select wallet, stats, categories, trades, updated_at from wallet_stats`.catch(() => []);
+  const out = new Map<string, Stored>();
+  for (const r of rows) {
+    const p = storedRowSchema.safeParse(r);
+    if (p.success) out.set(p.data.wallet, { wallet: p.data.wallet, stats: p.data.stats, categories: p.data.categories, trades: p.data.trades, updatedAt: p.data.updated_at });
+  }
+  return out;
+}
+
+async function saveStored(row: LeaderRow): Promise<void> {
+  if (!isDbConfigured()) return;
+  await db()`
+    insert into wallet_stats (wallet, stats, categories, trades, updated_at)
+    values (${row.wallet}, ${JSON.stringify(row.stats)}::jsonb, ${row.categories}, ${row.trades}, now())
+    on conflict (wallet) do update set stats = excluded.stats, categories = excluded.categories, trades = excluded.trades, updated_at = now()`;
+}
+
+/**
+ * Leaderboard scan. Discovers active wallets from trade tapes, refreshes a few of the
+ * stalest wallets' records from Panta each run (one attempt each, stopping on a rate
+ * limit), and serves every record confirmed so far from the database, so the board grows
+ * over time and survives Panta outages.
+ */
+async function compute(): Promise<{ rows: LeaderRow[]; scannedMarkets: number; scannedWallets: number; delayed: number; computedAt: string; lastConfirmed: string | null }> {
   const markets = await listAllMarkets();
   const traded = markets
     .filter((m) => (num(m.volumeUsdc) ?? 0) > 0 || m.resolved)
@@ -39,10 +99,8 @@ async function compute(): Promise<{ rows: LeaderRow[]; scannedMarkets: number; s
     .slice(0, 50);
   const categoryOf = new Map(markets.map((m) => [m.marketId, m.category]));
 
-  // The whole scan must finish inside one 60s function run to be cached at all, so each
-  // phase has its own budget: about 12s for tapes, then about 22s for positions.
   const tapeDeadline = Date.now() + 12_000;
-  const tapes = await mapLimit(traded, 8, (m) => {
+  const tapes = await mapLimit(traded, 6, (m) => {
     if (Date.now() > tapeDeadline) return Promise.reject(new Error("Tape budget exhausted"));
     return getMarketTrades(m.marketId, 200);
   });
@@ -58,44 +116,50 @@ async function compute(): Promise<{ rows: LeaderRow[]; scannedMarkets: number; s
     }
   }
 
-  // Hard budget for the positions phase so a slow Panta never stalls the scan; misses
-  // are reported as delayed and retried on the next refresh.
+  const stored = await readStored();
+  // Refresh wallets we've never scored first, then the stalest records.
+  const candidates = [...activity.entries()]
+    .sort((a, b) => {
+      const sa = stored.get(a[0])?.updatedAt ?? "";
+      const sb = stored.get(b[0])?.updatedAt ?? "";
+      return sa.localeCompare(sb) || b[1].trades - a[1].trades;
+    })
+    .slice(0, REFRESH_PER_RUN);
+
   const deadline = Date.now() + 22_000;
-
-  // Positions are the expensive call (60/min); score the most active wallets.
-  const candidates = [...activity.entries()].sort((a, b) => b[1].trades - a[1].trades).slice(0, 30);
-  const score = async ([wallet, a]: [string, { trades: number; categories: Set<string> }]): Promise<LeaderRow> => {
-    if (Date.now() > deadline) throw new Error("Scan budget exhausted");
-    const p = await getPositions(wallet, { fresh: true });
-    const calls = buildCalls(p.positions, []);
-    return { wallet, stats: computeStats(calls), trades: a.trades, categories: [...a.categories] };
-  };
-  const first = await mapLimit(candidates, 4, score);
-
-  // /positions/ fails intermittently; give the misses a slower second pass.
-  const misses = candidates.filter((_, i) => first[i].status === "rejected");
-  const second = await mapLimit(misses, 2, async (c) => {
-    await new Promise((r) => setTimeout(r, 500));
-    return score(c);
+  let rateLimited = false;
+  const refreshed = await mapLimit(candidates, 2, async ([wallet, a]) => {
+    if (rateLimited || Date.now() > deadline) throw new Error("Skipped this run");
+    try {
+      const p = await getPositions(wallet, { fresh: true, noRetry: true });
+      const row: LeaderRow = { wallet, stats: computeStats(buildCalls(p.positions, [])), trades: a.trades, categories: [...a.categories] };
+      await saveStored(row).catch(() => undefined);
+      stored.set(wallet, { ...row, updatedAt: new Date().toISOString() });
+      return row;
+    } catch (err) {
+      if (err instanceof PantaError && (err.status === 429 || err.code === "RATE_LIMITED")) rateLimited = true;
+      throw err;
+    }
   });
 
-  const results = [...first, ...second];
-  const rows = results
-    .filter((r): r is PromiseFulfilledResult<LeaderRow> => r.status === "fulfilled")
-    .map((r) => r.value)
-    .filter((r) => r.stats.resolved >= MIN_RESOLVED);
-  const delayed = second.filter((r) => r.status === "rejected").length;
+  const all = [...stored.values()];
+  const rows = all.filter((r) => r.stats.resolved >= MIN_RESOLVED).map(({ updatedAt: _u, ...r }) => {
+    void _u;
+    return r;
+  });
+  const lastConfirmed = all.reduce<string | null>((m, r) => (m === null || r.updatedAt > m ? r.updatedAt : m), null);
 
   return {
     rows,
     scannedMarkets: traded.length,
-    scannedWallets: candidates.length,
-    delayed,
+    scannedWallets: stored.size,
+    delayed: refreshed.filter((r) => r.status === "rejected").length,
     computedAt: new Date().toISOString(),
+    lastConfirmed,
   };
 }
 
-export const getLeaderboard = unstable_cache(compute, ["leaderboard-v4"], { revalidate: 600 });
+export const getLeaderboard = unstable_cache(compute, ["leaderboard-v5"], { revalidate: 300 });
 
 export type SortKey = "edge" | "hit" | "roi" | "record";
 

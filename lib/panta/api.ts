@@ -195,11 +195,12 @@ export function getWalletTrades(wallet: string, limit = 200) {
   });
 }
 
-export function getPositions(wallet: string, opts: { fresh?: boolean } = {}) {
+export function getPositions(wallet: string, opts: { fresh?: boolean; noRetry?: boolean } = {}) {
   return pantaRequest("/positions/", positionsSchema, {
     query: { wallet },
     revalidate: opts.fresh ? 0 : 15,
-    retryTransient: true,
+    retryTransient: !opts.noRetry,
+    noRetry: opts.noRetry,
     timeoutMs: 8_000,
   });
 }

@@ -33,6 +33,8 @@ type RequestOptions = {
    * Only enable this for idempotent reads.
    */
   retryTransient?: boolean;
+  /** Make exactly one attempt (bulk scans must not multiply load on rate limits). */
+  noRetry?: boolean;
   /** Abort a single attempt after this many ms (Panta occasionally hangs before a 504). */
   timeoutMs?: number;
 };
@@ -79,16 +81,16 @@ export async function pantaRequest<S extends z.ZodTypeAny>(
       });
     } catch (err) {
       const timedOut = err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError");
-      if (method === "GET" && attempt < MAX_RETRIES) continue;
+      if (method === "GET" && attempt < MAX_RETRIES && !opts.noRetry) continue;
       throw new PantaError(timedOut ? "TIMEOUT" : "NETWORK", timedOut ? "Panta took too long to respond" : "Couldn't reach Panta", 504);
     }
 
-    if (res.status === 429 && attempt < MAX_RETRIES) {
+    if (res.status === 429 && attempt < MAX_RETRIES && !opts.noRetry) {
       const retryAfter = Number(res.headers.get("Retry-After") ?? "1");
       await sleep(Math.min(retryAfter, 5) * 1000 + Math.random() * 300);
       continue;
     }
-    const transient = res.status >= 500 || (opts.retryTransient && res.status === 400);
+    const transient = !opts.noRetry && (res.status >= 500 || (opts.retryTransient && res.status === 400));
     if (transient && method === "GET" && attempt < MAX_RETRIES + 1) {
       await sleep(400 * (attempt + 1) + Math.random() * 200);
       continue;

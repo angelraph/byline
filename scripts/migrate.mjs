@@ -45,6 +45,13 @@ const statements = [
     created_at timestamptz not null default now()
   )`,
   `create index if not exists desk_messages_idx on desk_messages (desk, id desc)`,
+  `create table if not exists wallet_stats (
+    wallet text primary key,
+    stats jsonb not null,
+    categories text[] not null default '{}',
+    trades integer not null default 0,
+    updated_at timestamptz not null default now()
+  )`,
   `create table if not exists auth_nonces (
     nonce text primary key,
     expires_at timestamptz not null
