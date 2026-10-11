@@ -56,7 +56,10 @@ export async function structured<S extends z.ZodTypeAny>(opts: {
     });
     content = res.choices[0]?.message?.content;
   } catch (err) {
-    throw new AiError("UPSTREAM", err instanceof Error ? err.message : "AI request failed");
+    const message = err instanceof Error ? err.message : "AI request failed";
+    // Server log only (never sent to the client): helps diagnose key or model problems.
+    console.error(`[ai] ${opts.name} failed with model ${AI_MODEL}: ${message.slice(0, 300)}`);
+    throw new AiError("UPSTREAM", message);
   }
   if (!content) throw new AiError("BAD_OUTPUT", "AI returned no content.");
   let json: unknown;
