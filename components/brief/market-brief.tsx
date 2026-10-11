@@ -8,22 +8,24 @@ export async function MarketBrief({ marketId }: { marketId: string }) {
     const b = await getMarketBrief(marketId);
     return (
       <section aria-label="AI brief" className="rounded-2xl border border-line bg-ink-2 p-5">
-        <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-accent">Brief</p>
+        <p className="text-xs font-semibold uppercase tracking-wider text-accent">Brief</p>
         <h2 className="mt-1 font-display text-xl font-semibold leading-snug">{b.headline}</h2>
-        <p className="mt-2 text-sm text-paper-dim">{b.read}</p>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          <div className="rounded-xl bg-yes-bg p-3">
-            <p className="font-mono text-[10px] uppercase tracking-wider text-yes">The YES case</p>
-            <p className="mt-1 text-sm">{b.yesCase}</p>
+        <dl className="mt-4 space-y-3 text-sm">
+          <div>
+            <dt className="text-xs font-semibold text-paper-mute">What the market thinks</dt>
+            <dd className="mt-0.5 text-paper">{b.marketView}</dd>
           </div>
-          <div className="rounded-xl bg-no-bg p-3">
-            <p className="font-mono text-[10px] uppercase tracking-wider text-no">The NO case</p>
-            <p className="mt-1 text-sm">{b.noCase}</p>
+          <div>
+            <dt className="text-xs font-semibold text-paper-mute">Where the money is going</dt>
+            <dd className="mt-0.5 text-paper">{b.moneyFlow}</dd>
           </div>
-        </div>
-        <p className="mt-3 text-sm"><span className="text-paper-mute">Watch:</span> {b.watch}</p>
-        <p className="mt-3 text-[11px] text-paper-mute">
-          Written by AI from Panta&apos;s live price and trade tape · {relativeTime(b.generatedAt)} · not advice.
+          <div>
+            <dt className="text-xs font-semibold text-paper-mute">What decides it</dt>
+            <dd className="mt-0.5 text-paper">{b.decider}</dd>
+          </div>
+        </dl>
+        <p className="mt-4 text-[11px] text-paper-mute">
+          AI summary of this market&apos;s price and recent bets · updated {relativeTime(b.generatedAt)} · not financial advice
         </p>
       </section>
     );

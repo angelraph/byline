@@ -9,52 +9,66 @@ import { marketTitle, num } from "@/lib/format";
 
 export const marketBriefSchema = z.object({
   headline: z.string(),
-  read: z.string(),
-  yesCase: z.string(),
-  noCase: z.string(),
-  watch: z.string(),
+  marketView: z.string(),
+  moneyFlow: z.string(),
+  decider: z.string(),
 });
 export type MarketBrief = z.infer<typeof marketBriefSchema>;
 
 const marketBriefJson = {
   type: "object",
   additionalProperties: false,
-  required: ["headline", "read", "yesCase", "noCase", "watch"],
+  required: ["headline", "marketView", "moneyFlow", "decider"],
   properties: {
-    headline: { type: "string", description: "One line, under 90 characters, newsroom style." },
-    read: { type: "string", description: "2-3 sentences: what the price implies and what the tape shows." },
-    yesCase: { type: "string", description: "1-2 sentences: the strongest argument for YES using only given facts." },
-    noCase: { type: "string", description: "1-2 sentences: the strongest argument for NO using only given facts." },
-    watch: { type: "string", description: "One sentence: the concrete thing that will decide it." },
+    headline: { type: "string", description: "One short line a casual fan understands, under 70 characters." },
+    marketView: {
+      type: "string",
+      description: "One sentence: what the market thinks, as a rounded chance in plain words (e.g. 'about a coin flip', 'roughly 3 in 4').",
+    },
+    moneyFlow: {
+      type: "string",
+      description: "One or two sentences: which side recent bettors are backing, in plain words (count people, not shares). Say plainly if there is little activity.",
+    },
+    decider: { type: "string", description: "One sentence: exactly what settles the bet and roughly when, in everyday words." },
   },
 };
+
+function humanDuration(seconds: number): string {
+  const days = Math.round(seconds / 86_400);
+  if (seconds < 3600) return "less than an hour";
+  if (seconds < 86_400) return `about ${Math.round(seconds / 3600)} hours`;
+  if (days < 14) return `about ${days} days`;
+  if (days < 60) return `about ${Math.round(days / 7)} weeks`;
+  return `about ${Math.round(days / 30)} months`;
+}
 
 async function computeMarketBrief(marketId: string): Promise<MarketBrief & { generatedAt: string }> {
   const [market, tape] = await Promise.all([getMarketMerged(marketId), getMarketTrades(marketId, 100).catch(() => ({ items: [] }))]);
   const buys = tape.items.filter((t) => t.kind === "buy");
-  const yesShares = buys.filter((t) => t.side === "yes").reduce((s, t) => s + (num(t.shares) ?? 0), 0);
-  const noShares = buys.filter((t) => t.side === "no").reduce((s, t) => s + (num(t.shares) ?? 0), 0);
-  const wallets = new Set(buys.map((t) => t.wallet)).size;
-  const largest = buys.reduce((m, t) => Math.max(m, num(t.shares) ?? 0), 0);
-  const recent = buys.slice(0, 10).map((t) => `${t.side ?? "?"} ${Number(t.shares ?? 0).toFixed(1)}`).join(", ");
+  const yesBuyers = new Set(buys.filter((t) => t.side === "yes").map((t) => t.wallet)).size;
+  const noBuyers = new Set(buys.filter((t) => t.side === "no").map((t) => t.wallet)).size;
+  const last10 = buys.slice(0, 10);
+  const recentYes = last10.filter((t) => t.side === "yes").length;
   const now = Date.now() / 1000;
+  const yes = num(market.yesPrice);
 
   const facts = [
-    `Market: ${marketTitle(market)}`,
+    `Question: ${marketTitle(market)}`,
     market.description ? `Description: ${market.description}` : null,
-    `Category: ${market.category}. Phase: ${market.phase}${market.resolved ? " (resolved)" : ""}.`,
-    `YES price: ${market.yesPrice ?? "unknown"}. NO price: ${market.noPrice ?? "unknown"}.`,
-    market.endTime ? `Trading closes in ${Math.round((market.endTime - now) / 3600)} hours.` : null,
-    market.oracle ? `Resolution source: ${market.oracle}.` : null,
-    `Trade tape (last ${buys.length} buys): ${yesShares.toFixed(1)} YES shares vs ${noShares.toFixed(1)} NO shares from ${wallets} distinct wallets. Largest single buy: ${largest.toFixed(1)} shares.`,
-    recent ? `Most recent buys, newest first: ${recent}.` : "No buys yet.",
+    yes !== null ? `Market chance of YES: about ${Math.round(yes * 100)}%.` : "Market chance: unknown right now.",
+    market.endTime ? `Betting closes in ${humanDuration(market.endTime - now)}.` : null,
+    market.oracle ? `Settled by: ${market.oracle}.` : null,
+    buys.length > 0
+      ? `Recent betting: ${yesBuyers} different people bought YES and ${noBuyers} bought NO. Of the last ${last10.length} bets, ${recentYes} were YES.`
+      : "No bets yet.",
   ]
     .filter(Boolean)
     .join("\n");
 
   const brief = await structured({
     name: "market_brief",
-    system: "Write a scouting report for one market.",
+    system:
+      "Write a short, friendly market brief for casual sports and news fans. Plain everyday English, short sentences, no jargon. Round numbers; never use decimals or hours counts; never say 'shares', 'tape', 'wallets' or 'liquidity'.",
     user: facts,
     jsonSchema: marketBriefJson,
     schema: marketBriefSchema,
@@ -64,7 +78,7 @@ async function computeMarketBrief(marketId: string): Promise<MarketBrief & { gen
 
 /** Cached per market for 15 minutes to keep AI cost bounded under traffic. */
 export function getMarketBrief(marketId: string) {
-  return unstable_cache(() => computeMarketBrief(marketId), ["market-brief-v1", marketId], { revalidate: 900 })();
+  return unstable_cache(() => computeMarketBrief(marketId), ["market-brief-v2", marketId], { revalidate: 900 })();
 }
 
 /* ---------- Headline brief ---------- */
