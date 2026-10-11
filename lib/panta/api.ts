@@ -177,10 +177,10 @@ export const getPricedCatalog = unstable_cache(async () => withLivePrices(await 
   revalidate: 30,
 });
 
-export function getMarketTrades(marketId: string, limit = 50) {
+export function getMarketTrades(marketId: string, limit = 50, revalidate = 10) {
   return pantaRequest(`/markets/${encodeURIComponent(marketId)}/trades/`, marketTradesSchema, {
     query: { limit },
-    revalidate: 5,
+    revalidate,
   });
 }
 

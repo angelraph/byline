@@ -92,6 +92,7 @@ export function TopNav() {
               <Link
                 key={item.href}
                 href={item.href}
+                prefetch
                 className={`flex shrink-0 items-center gap-1.5 border-b-2 px-3 pb-2.5 pt-1 text-sm font-medium transition ${
                   active ? "border-accent text-paper" : "border-transparent text-paper-dim hover:text-paper"
                 }`}
@@ -129,6 +130,7 @@ export function BottomNav() {
             <li key={item.href}>
               <Link
                 href={item.href}
+                prefetch
                 className={`flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition ${active ? "text-accent" : "text-paper-mute"}`}
               >
                 <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

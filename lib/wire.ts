@@ -18,10 +18,10 @@ async function loadBlotter(): Promise<{ rows: BlotterRow[]; scanned: number }> {
     ...markets
       .filter((m) => !isOpen(m))
       .sort((a, b) => (num(b.volumeUsdc) ?? 0) - (num(a.volumeUsdc) ?? 0))
-      .slice(0, 20),
+      .slice(0, 6),
   ];
   const byId = new Map(markets.map((m) => [m.marketId, m]));
-  const tapes = await mapLimit(targets, 8, (m) => getMarketTrades(m.marketId, 30));
+  const tapes = await mapLimit(targets.slice(0, 12), 4, (m) => getMarketTrades(m.marketId, 30, 60));
   const rows: BlotterRow[] = [];
   for (const t of tapes) {
     if (t.status !== "fulfilled") continue;
@@ -34,7 +34,7 @@ async function loadBlotter(): Promise<{ rows: BlotterRow[]; scanned: number }> {
   return { rows: rows.slice(0, 60), scanned: targets.length };
 }
 
-export const getBlotter = unstable_cache(loadBlotter, ["wire-blotter-v1"], { revalidate: 30 });
+export const getBlotter = unstable_cache(loadBlotter, ["wire-blotter-v2"], { revalidate: 60 });
 
 export async function getTerminal(): Promise<Market[]> {
   return (await getPricedCatalog()).filter(isListable);

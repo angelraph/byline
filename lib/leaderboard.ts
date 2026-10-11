@@ -96,13 +96,13 @@ async function compute(): Promise<{ rows: LeaderRow[]; scannedMarkets: number; s
   const traded = markets
     .filter((m) => (num(m.volumeUsdc) ?? 0) > 0 || m.resolved)
     .sort((a, b) => (num(b.volumeUsdc) ?? 0) - (num(a.volumeUsdc) ?? 0))
-    .slice(0, 50);
+    .slice(0, 25);
   const categoryOf = new Map(markets.map((m) => [m.marketId, m.category]));
 
   const tapeDeadline = Date.now() + 12_000;
   const tapes = await mapLimit(traded, 6, (m) => {
     if (Date.now() > tapeDeadline) return Promise.reject(new Error("Tape budget exhausted"));
-    return getMarketTrades(m.marketId, 200);
+    return getMarketTrades(m.marketId, 200, 600);
   });
   const activity = new Map<string, { trades: number; categories: Set<string> }>();
   for (const t of tapes) {
