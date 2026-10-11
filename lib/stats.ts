@@ -21,6 +21,8 @@ export type CallRecord = {
   /** First time this wallet bought into this market (unix seconds), from the trade tape. */
   calledAt: number | null;
   hedged: boolean;
+  /** Seen on the trade tape but not yet in Panta's positions index (it lags new buys). */
+  indexing: boolean;
 };
 
 export type BylineStats = {
@@ -60,7 +62,7 @@ export function buildCalls(positions: Position[], trades: Trade[]): CallRecord[]
     sidesByMarket.set(p.marketId, set);
   }
 
-  return positions
+  const fromPositions: CallRecord[] = positions
     .filter((p) => (num(p.shares) ?? 0) > 0 || (num(p.marketPrimaryContributedUsdc) ?? 0) > 0)
     .map((p) => {
       const shares = num(p.shares) ?? 0;
@@ -95,9 +97,50 @@ export function buildCalls(positions: Position[], trades: Trade[]): CallRecord[]
         claimed: p.claimed,
         calledAt: firstBuy.get(p.marketId) ?? p.claimedAt ?? null,
         hedged: (sidesByMarket.get(p.marketId)?.size ?? 0) > 1,
+        indexing: false,
       };
-    })
-    .sort((a, b) => (b.calledAt ?? 0) - (a.calledAt ?? 0));
+    });
+
+  // Buys on the trade tape for markets the positions index doesn't list yet: show them as
+  // open calls so a fresh trade appears immediately. Outcome and cost arrive once indexed.
+  const indexed = new Set(positions.map((p) => `${p.marketId}:${p.side}`));
+  const pending = new Map<string, CallRecord>();
+  for (const t of trades) {
+    if (t.kind !== "buy" || !t.side) continue;
+    const key = `${t.marketId}:${t.side}`;
+    if (indexed.has(key)) continue;
+    const shares = num(t.shares) ?? 0;
+    const existing = pending.get(key);
+    if (existing) {
+      existing.shares += shares;
+      if (t.blockTime !== null && (existing.calledAt === null || t.blockTime < existing.calledAt)) existing.calledAt = t.blockTime;
+      continue;
+    }
+    pending.set(key, {
+      marketId: t.marketId,
+      title: null,
+      image: null,
+      category: null,
+      side: t.side,
+      shares,
+      cost: null,
+      entryPrice: null,
+      status: "open",
+      payout: null,
+      payoutEstimated: false,
+      currentValue: null,
+      claimable: false,
+      claimed: false,
+      calledAt: t.blockTime,
+      hedged: false,
+      indexing: true,
+    });
+  }
+  const pendingSides = new Map<string, Set<string>>();
+  for (const c of pending.values()) pendingSides.set(c.marketId, (pendingSides.get(c.marketId) ?? new Set<string>()).add(c.side));
+  for (const c of pending.values()) c.hedged = (pendingSides.get(c.marketId)?.size ?? 0) > 1;
+
+  return [...fromPositions, ...pending.values()].sort((a, b) => (b.calledAt ?? 0) - (a.calledAt ?? 0));
 }
 
 export function computeStats(calls: CallRecord[]): BylineStats {

@@ -12,6 +12,7 @@ import { CallCard } from "@/components/social/call-card";
 import { isDbConfigured } from "@/lib/db";
 import { listCalls } from "@/lib/social";
 import { DivisionBadge } from "@/components/division-badge";
+import { withCallTitles } from "@/lib/call-titles";
 import { divisionFor } from "@/lib/divisions";
 
 export const revalidate = 30;
@@ -30,7 +31,7 @@ async function loadByline(wallet: string) {
     safe(() => getPositions(wallet)),
     safe(() => getWalletTrades(wallet, 200)),
   ]);
-  const calls = positions.ok ? buildCalls(positions.data.positions, trades.ok ? trades.data.items : []) : [];
+  const calls = positions.ok ? await withCallTitles(buildCalls(positions.data.positions, trades.ok ? trades.data.items : [])) : [];
   return { positions, trades, calls, stats: computeStats(calls) };
 }
 
@@ -98,6 +99,7 @@ function CallRow({ c }: { c: CallRecord }) {
             {c.cost !== null && c.cost > 0 ? <span>{c.hedged ? "market cost" : "cost"} {usdc(c.cost)}</span> : null}
             <span className="text-paper">{result}</span>
             {c.hedged ? <span className="text-accent">hedged · not scored</span> : null}
+            {c.indexing ? <span className="text-accent" title="Panta is still indexing this position; details fill in shortly.">indexing</span> : null}
             {c.calledAt ? <span className="ml-auto text-paper-mute">{relativeTime(c.calledAt * 1000)}</span> : null}
           </div>
         </div>
