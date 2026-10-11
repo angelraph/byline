@@ -10,6 +10,7 @@ import { cents, marketTitle, num, pct, relativeTime, shortAddr, usdc } from "@/l
 import { Notice, PhaseBadge, SectionHeader } from "@/components/ui";
 import { LocalTime } from "@/components/local-time";
 import { TradeAndCall } from "@/components/social/trade-and-call";
+import { withLinePrices } from "@/lib/panta/price";
 import { MarketExplainer, MarketExplainerSkeleton } from "@/components/explainer";
 import { MarketFeed } from "@/components/social/market-feed";
 import { isDbConfigured } from "@/lib/db";
@@ -89,13 +90,13 @@ export default async function MarketPage({
   const parentCall =
     socialEnabled && ref && /^[0-9a-f-]{36}$/i.test(ref) ? await getCall(ref).catch(() => null) : null;
   const parent = parentCall && parentCall.market_id === id ? { id: parentCall.id, wallet: parentCall.wallet, side: parentCall.side } : null;
-  const market = await loadMarket(id);
-  if (!market) notFound();
-
-  const tape = await safe(() => getMarketTrades(id, 50));
+  const loaded = await loadMarket(id);
+  if (!loaded) notFound();
+  const buyable = isBuyable(loaded);
+  // When Panta's detail route omits prices, show the executable $1 quote price instead.
+  const [market, tape] = await Promise.all([withLinePrices(loaded, buyable), safe(() => getMarketTrades(id, 50))]);
   const yes = num(market.yesPrice);
   const no = num(market.noPrice);
-  const buyable = isBuyable(market);
   const image = market.images[0];
 
   const timeline = [
