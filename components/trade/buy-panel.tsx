@@ -25,6 +25,38 @@ function secondsLeft(expiresAt: string, now: number) {
   return Math.max(0, Math.floor((Date.parse(expiresAt) - now) / 1000));
 }
 
+/** "2.00 odds · 50% chance" from a 0-1 price, or null when unknown. */
+function oddsLabel(price: string | null): string | null {
+  const n = price === null ? NaN : Number(price);
+  if (!Number.isFinite(n) || n <= 0 || n >= 1) return null;
+  return `${(1 / n).toFixed(2)} odds · ${Math.round(n * 100)}% chance`;
+}
+
+/** What the caller gets back: shown before they sign. */
+function ReturnSummary({ side, stake, shares, estimated = false }: { side: Side; stake: number; shares: number; estimated?: boolean }) {
+  const back = shares;
+  const profit = back - stake;
+  return (
+    <div className="mb-2 space-y-1.5 rounded-lg border border-line p-3 font-sans">
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="text-sm text-paper-dim">If {side.toUpperCase()} wins</span>
+        <span className="text-right">
+          <span className="block font-display text-lg font-bold text-yes">up to {usdc(back)}</span>
+          <span className="block text-xs text-yes">+{usdc(Math.max(0, profit))} profit · {(back / stake).toFixed(2)}×</span>
+        </span>
+      </div>
+      <div className="flex items-baseline justify-between gap-2 border-t border-line pt-1.5">
+        <span className="text-sm text-paper-dim">If {side === "yes" ? "NO" : "YES"} wins</span>
+        <span className="font-semibold text-no">you lose {usdc(stake)}</span>
+      </div>
+      <p className="text-[11px] leading-snug text-paper-mute">
+        {estimated ? "Estimate at the current price. Connect a wallet for an exact quote. " : ""}
+        Winners are paid from the market&apos;s pool, so the final payout can be slightly under $1 per share.
+      </p>
+    </div>
+  );
+}
+
 export function BuyPanel({
   marketId,
   yesPrice,
@@ -132,6 +164,12 @@ export function BuyPanel({
     if (quote && left <= 3 && !busy && !quoting) void requestQuote();
   }, [quote, left, busy, quoting, requestQuote]);
 
+  const sideNum = Number(side === "yes" ? yesPrice : noPrice);
+  const estimate =
+    !wallet && amountValid && Number.isFinite(sideNum) && sideNum > 0 && sideNum < 1
+      ? { stake: Number(amount), shares: Number(amount) / sideNum }
+      : null;
+
   const insufficientUsdc = balances !== null && amountValid && balances.usdc < Number(amount);
   const insufficientSol = balances !== null && balances.sol < MIN_SOL_FOR_TX;
 
@@ -233,11 +271,18 @@ export function BuyPanel({
                 : "border-line hover:border-line-strong"
             }`}
           >
-            <span className={`block font-mono text-xs uppercase ${s === "yes" ? "text-yes" : "text-no"}`}>{s}</span>
-            <span className="font-mono text-xl tabular">{cents(s === "yes" ? yesPrice : noPrice)}</span>
+            <span className={`block text-xs font-semibold uppercase ${s === "yes" ? "text-yes" : "text-no"}`}>{s}</span>
+            <span className="block font-display text-xl font-bold tabular">{cents(s === "yes" ? yesPrice : noPrice)}</span>
+            {oddsLabel(s === "yes" ? yesPrice : noPrice) ? (
+              <span className="mt-0.5 block text-[11px] text-paper-mute">{oddsLabel(s === "yes" ? yesPrice : noPrice)}</span>
+            ) : null}
           </button>
         ))}
       </div>
+
+      <p className="text-[11px] leading-relaxed text-paper-mute">
+        The price is the market&apos;s chance: 50¢ ≈ 50%, like 2.00 odds. Each share you buy pays out if your side wins.
+      </p>
 
       <div>
         <label htmlFor="amount" className="mb-1.5 block text-xs text-paper-mute">
@@ -276,15 +321,10 @@ export function BuyPanel({
             <p className="text-paper-mute">Getting a live quote…</p>
           ) : quote ? (
             <dl className="space-y-1.5">
+              <ReturnSummary side={side} stake={Number(quote.amountUsdc)} shares={Number(quote.shares)} />
               <div className="flex justify-between"><dt className="text-paper-mute">Shares</dt><dd>{Number(quote.shares).toFixed(2)}</dd></div>
               <div className="flex justify-between"><dt className="text-paper-mute">Avg price</dt><dd>{cents(quote.avgPrice)}</dd></div>
               <div className="flex justify-between"><dt className="text-paper-mute">Fee</dt><dd>{usdc(quote.feeUsdc)}</dd></div>
-              <div className="flex justify-between">
-                <dt className="text-paper-mute" title="Winning shares redeem from the market's pool, so the final payout can land below $1 per share.">
-                  Payout if {side.toUpperCase()}
-                </dt>
-                <dd className="text-yes">up to {usdc(Number(quote.shares))}</dd>
-              </div>
               <div className="flex justify-between pt-1 text-xs text-paper-mute">
                 <dt>Quote refreshes in</dt>
                 <dd>{quoting ? "…" : `${left}s`}</dd>
@@ -295,6 +335,10 @@ export function BuyPanel({
           ) : (
             <p className="text-paper-mute">Enter an amount to see your fill.</p>
           )}
+        </div>
+      ) : estimate ? (
+        <div className="rounded-xl bg-ink p-3 text-sm tabular">
+          <ReturnSummary side={side} stake={estimate.stake} shares={estimate.shares} estimated />
         </div>
       ) : null}
 

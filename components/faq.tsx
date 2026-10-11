@@ -21,7 +21,7 @@ export const FAQ_ITEMS: FaqItem[] = [
   {
     group: "Trading",
     q: "How are prices set?",
-    a: "Open markets trade on Panta's bonding curve. The price of YES is the market's probability: 62¢ means the market gives it a 62% chance. Your quote shows exactly how many shares you get, the average price and the fee before you sign.",
+    a: "Prices are per share and show the market's chance: 62¢ means a 62% chance, which is about 1.61 in decimal odds (1 ÷ 0.62). Each share pays out if your side wins, so $1 at 50¢ buys about 2 shares and returns up to about $2. Before you sign, the panel shows what you get back if you win, what you lose if you don't, the shares, the average price and the fee. Winners are paid from the market's pool, so the payout can be slightly under $1 per share.",
   },
   {
     group: "Trading",
