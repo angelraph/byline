@@ -80,7 +80,7 @@ export function FixtureCard({ fixture, markets, forgeHref }: { fixture: Fixture;
             className="flex items-center justify-between rounded-xl border border-dashed border-line-strong px-3 py-2.5 text-sm text-paper-dim transition hover:border-accent hover:text-paper"
           >
             <span>No market yet</span>
-            <span className="font-semibold text-accent">Forge this market →</span>
+            <span className="font-semibold text-accent">Create this market →</span>
           </Link>
         ) : (
           <p className="px-1 text-sm text-paper-mute">No market was opened for this one.</p>

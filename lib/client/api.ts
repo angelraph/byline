@@ -66,6 +66,9 @@ export function explainCode(code: string, fallback: string): string {
     TX_NOT_FOUND: "Panta hasn't seen the transaction yet. It usually appears within seconds.",
     TX_FAILED: "The transaction failed on-chain.",
     NOT_CONFIGURED: "Trading is unavailable: the server's Panta key isn't configured.",
+    INTERNAL_ERROR: "Panta couldn't complete that just now. Please try again in a moment.",
+    HTTP_ERROR: "Panta couldn't complete that just now. Please try again in a moment.",
+    TIMEOUT: "Panta took too long to respond. Please try again in a moment.",
   };
   if (map[code]) return map[code];
   // Panta sometimes returns the bare code as the message (e.g. quoting a graduated market).

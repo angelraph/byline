@@ -3,12 +3,13 @@
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { useRouter } from "next/navigation";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { CreateBuild, CreateQuote, ImageUploadTicket, RegisterResult } from "@/lib/panta/schemas";
 import type { ForgeDraft, ForgeTemplate } from "@/lib/forge/templates";
 import { MIN_START_DELAY_SEC } from "@/lib/forge/templates";
 import { apiPost, ClientApiError, explainCode } from "@/lib/client/api";
 import { classifyTxError, decodeTransaction, sendAndConfirm } from "@/lib/solana/tx";
+import { getBalances } from "@/lib/solana/balances";
 import { fromBaseUnits, usdc } from "@/lib/format";
 
 type Phase =
@@ -55,6 +56,20 @@ export function ForgeForm({
   const fileRef = useRef<HTMLInputElement>(null);
 
   const busy = ["quoting", "building", "signing", "sending", "registering"].includes(phase.kind);
+  const [usdcBalance, setUsdcBalance] = useState<number | null>(null);
+  useEffect(() => {
+    if (!publicKey) {
+      setUsdcBalance(null);
+      return;
+    }
+    let alive = true;
+    getBalances(connection, publicKey)
+      .then((b) => alive && setUsdcBalance(b.usdc))
+      .catch(() => alive && setUsdcBalance(null));
+    return () => {
+      alive = false;
+    };
+  }, [connection, publicKey]);
   const wallet = publicKey?.toBase58() ?? null;
   const set = <K extends keyof ForgeDraft>(k: K, v: ForgeDraft[K]) => {
     setDraft((d) => ({ ...d, [k]: v }));
@@ -288,28 +303,40 @@ export function ForgeForm({
           <div className="mt-4 rounded-xl bg-ink p-3 font-mono text-sm tabular">
             {phase.kind === "quoted" && fee !== null ? (
               <dl className="space-y-1.5">
-                <div className="flex justify-between"><dt className="text-paper-mute">Creation fee</dt><dd>{usdc(fee)}</dd></div>
-                {liquidity !== null ? <div className="flex justify-between"><dt className="text-paper-mute">Seeds liquidity</dt><dd>{usdc(liquidity)}</dd></div> : null}
-                <p className="pt-1 text-xs text-paper-mute">You earn creator fees on trading once the market graduates.</p>
+                <div className="flex justify-between"><dt className="text-paper-mute">Cost to create</dt><dd>{usdc(fee)}</dd></div>
+                {liquidity !== null ? <div className="flex justify-between"><dt className="text-paper-mute">Goes into the market&apos;s starting pool</dt><dd>{usdc(liquidity)}</dd></div> : null}
+                <p className="pt-1 font-sans text-xs text-paper-mute">You earn a share of betting fees once your market gets going.</p>
               </dl>
             ) : (
-              <p className="text-paper-mute">Get a quote to see the creation fee.</p>
+              <p className="font-sans text-xs leading-relaxed text-paper-dim">
+                Creating a market costs about <strong className="text-paper">$50 USDC</strong>, paid to Panta. Part of it becomes the market&apos;s starting pool so people can bet right away. You&apos;ll see the exact amount before you pay.
+              </p>
             )}
           </div>
 
           {phase.kind === "error" ? <p className="mt-3 rounded-lg bg-no-bg px-3 py-2 text-sm text-no">{phase.message}</p> : null}
+          {phase.kind === "quoted" && fee !== null && usdcBalance !== null && usdcBalance < fee ? (
+            <p className="mt-3 rounded-lg bg-no-bg px-3 py-2 text-sm text-no">
+              You need {usdc(fee)} USDC to create this market. Your wallet has {usdc(usdcBalance)}.
+            </p>
+          ) : null}
 
           {!wallet ? (
             <button type="button" onClick={() => setVisible(true)} className="mt-4 w-full rounded-xl bg-accent py-3 font-semibold text-accent-ink">
-              Connect wallet to forge
+              Connect wallet to create
             </button>
           ) : phase.kind === "error" && phase.retryRegister ? (
             <button type="button" onClick={() => phase.retryRegister && void register(phase.retryRegister.createId, phase.retryRegister.signature)} className="mt-4 w-full rounded-xl bg-accent py-3 font-semibold text-accent-ink">
               Retry registration
             </button>
           ) : phase.kind === "quoted" ? (
-            <button type="button" onClick={() => void create()} className="mt-4 w-full rounded-xl bg-accent py-3 font-semibold text-accent-ink">
-              Create market · {usdc(fee)}
+            <button
+              type="button"
+              onClick={() => void create()}
+              disabled={fee !== null && usdcBalance !== null && usdcBalance < fee}
+              className="mt-4 w-full rounded-xl bg-accent py-3 font-semibold text-accent-ink disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Pay {usdc(fee)} &amp; create market
             </button>
           ) : (
             <button

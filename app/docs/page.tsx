@@ -117,7 +117,7 @@ export default function DocsPage() {
 
         <Section id="creating" title="Creating markets">
           <p>
-            Use <Link href="/forge" className="text-accent hover:underline">Create market</Link>, or <strong>Forge this market</strong> on any game in the Sports slate. For real
+            Use <Link href="/forge" className="text-accent hover:underline">Create market</Link>, or <strong>Create this market</strong> on any game in the Sports slate. For real
             fixtures, BYLINE pre-fills the question, a precise resolution rule, the official ESPN match page as source of truth, times based on the
             sport&apos;s typical length, and the team logo as the image.
           </p>

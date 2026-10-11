@@ -289,12 +289,25 @@ export function requestImageUpload() {
   });
 }
 
+/** Retry Panta create-flow calls that fail on its side (5xx / INTERNAL_ERROR); both only reserve sessions. */
+async function retryServerErrors<T>(fn: () => Promise<T>, attempts = 3): Promise<T> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      const serverSide = err instanceof PantaError && (err.status >= 500 || err.code === "INTERNAL_ERROR");
+      if (!serverSide || attempt >= attempts - 1) throw err;
+      await new Promise((r) => setTimeout(r, 500 + attempt * 500));
+    }
+  }
+}
+
 export function quoteCreate(input: CreateMarketInput) {
-  return pantaRequest("/markets/create/quote/", createQuoteSchema, { method: "POST", body: input });
+  return retryServerErrors(() => pantaRequest("/markets/create/quote/", createQuoteSchema, { method: "POST", body: input }));
 }
 
 export function buildCreate(input: { createId: string; wallet: string }) {
-  return pantaRequest("/markets/create/build/", createBuildSchema, { method: "POST", body: input });
+  return retryServerErrors(() => pantaRequest("/markets/create/build/", createBuildSchema, { method: "POST", body: input }));
 }
 
 export function registerCreate(input: { createId: string; signature: string }) {

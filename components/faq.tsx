@@ -52,7 +52,7 @@ export const FAQ_ITEMS: FaqItem[] = [
   {
     group: "Creators",
     q: "Can I create my own market?",
-    a: "Yes. Open Create market (or Forge this market on any game), write a clear YES/NO question and resolution rule, pay Panta's creation fee, and sign once. It goes live for anyone to trade.",
+    a: "Yes. Tap Create market (or Create this market on any game). BYLINE fills in a clear YES/NO question, the rule for who wins and the official source; you can edit any of it. Creating costs about $50 USDC, paid to Panta, and part of that becomes the market's starting pool so people can bet right away. You see the exact amount before you pay.",
   },
   {
     group: "Creators",
