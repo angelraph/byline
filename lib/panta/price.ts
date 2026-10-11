@@ -14,14 +14,17 @@ async function probe(marketId: string): Promise<{ yes: string | null; no: string
     quoteOrder({ wallet: PRICE_PROBE_WALLET, marketId, side: "yes", amountUsdc: "1" }),
     quoteOrder({ wallet: PRICE_PROBE_WALLET, marketId, side: "no", amountUsdc: "1" }),
   ]);
-  return {
+  const result = {
     yes: yes.status === "fulfilled" ? yes.value.avgPrice : null,
     no: no.status === "fulfilled" ? no.value.avgPrice : null,
   };
+  // Throwing keeps a failed probe out of the cache, so the next request tries again.
+  if (result.yes === null && result.no === null) throw new Error("Price probe failed");
+  return result;
 }
 
 const cachedProbe = (marketId: string) =>
-  unstable_cache(() => probe(marketId), ["price-probe-v1", marketId], { revalidate: 20 })();
+  unstable_cache(() => probe(marketId), ["price-probe-v2", marketId], { revalidate: 20 })();
 
 /**
  * Spot prices when Panta's detail route provides them; otherwise the executable price of a
