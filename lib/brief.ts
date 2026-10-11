@@ -4,6 +4,9 @@ import { z } from "zod";
 import { structured } from "@/lib/ai";
 import { getMarketMerged, getMarketTrades, getPricedCatalog, isBuyable } from "@/lib/panta/api";
 import { marketTitle, num } from "@/lib/format";
+import { getSlate, type Fixture } from "@/lib/sports/espn";
+import { fixturesInText, marketsForFixture } from "@/lib/sports/match";
+import { templatesFor } from "@/lib/forge/templates";
 
 /* ---------- Per-market brief ---------- */
 
@@ -101,7 +104,7 @@ const headlineBriefJson = {
   additionalProperties: false,
   required: ["summary", "angles", "relatedMarketIds", "draft"],
   properties: {
-    summary: { type: "string", description: "2 sentences restating what the text claims, without adding facts." },
+    summary: { type: "string", description: "2 plain sentences: what the text is about, using the real fixture details when given (teams, competition, date, status)." },
     angles: { type: "array", items: { type: "string" }, description: "2-4 short, checkable YES/NO questions this raises." },
     relatedMarketIds: {
       type: "array",
@@ -122,23 +125,88 @@ const headlineBriefJson = {
   },
 };
 
+export type MatchedFixture = {
+  id: string;
+  league: string;
+  name: string;
+  startsAt: string;
+  state: "pre" | "in" | "post";
+  statusDetail: string;
+  venue: string | null;
+  score: string | null;
+};
+
+function describeFixture(f: Fixture): string {
+  const when = new Date(f.startsAt).toUTCString().replace(" GMT", " UTC");
+  const score =
+    f.state !== "pre" && f.home?.score != null && f.away?.score != null ? ` Score: ${f.home.name} ${f.home.score}, ${f.away.name} ${f.away.score}.` : "";
+  const status = f.state === "pre" ? "not started" : f.state === "in" ? `live (${f.statusDetail})` : `finished (${f.statusDetail || "final"})`;
+  return `${f.away?.name ?? "?"} at ${f.home?.name ?? "?"}, ${f.leagueLabel}, kickoff ${when}${f.venue ? `, ${f.venue}` : ""}. Status: ${status}.${score}`;
+}
+
 export async function briefHeadline(text: string) {
-  const markets = (await getPricedCatalog()).filter((m) => isBuyable(m));
+  const nowSec = Math.floor(Date.now() / 1000);
+  const [markets, slate] = await Promise.all([
+    getPricedCatalog().then((ms) => ms.filter((m) => isBuyable(m))),
+    getSlate({ daysBack: 3, daysAhead: 21 }).catch(() => ({ fixtures: [] as Fixture[], failed: [] })),
+  ]);
+
+  // Ground the brief in real fixtures the text is about.
+  const matched = fixturesInText(text, slate.fixtures).slice(0, 3);
+  const primary = matched[0] ?? null;
+
   const list = markets.slice(0, 60).map((m) => `${m.marketId} | ${marketTitle(m)} | YES ${m.yesPrice ?? "?"}`).join("\n");
   const today = new Date().toISOString().slice(0, 10);
+  const fixtureFacts = matched.length > 0 ? matched.map((f) => `- ${describeFixture(f)}`).join("\n") : "(no matching fixture in the live schedule)";
+
   const result = await structured({
     name: "headline_brief",
-    system: `Today is ${today}. Turn a headline or news text into a market brief. Only pick related markets from the list provided.`,
-    user: `TEXT:\n${text}\n\nOPEN PANTA MARKETS (id | title | yes price):\n${list || "(none)"}`,
+    system: `Today is ${today}. Turn a headline or news text into a short, plain-English market brief. REAL FIXTURES below come from the official live schedule and are authoritative: use their exact teams, competition, date and status, and never invent or guess dates. Only pick related markets from the list provided.`,
+    user: `TEXT:\n${text}\n\nREAL FIXTURES:\n${fixtureFacts}\n\nOPEN PANTA MARKETS (id | title | yes price):\n${list || "(none)"}`,
     jsonSchema: headlineBriefJson,
     schema: headlineBriefSchema,
   });
+
   const valid = new Set(markets.map((m) => m.marketId));
-  const related = result.relatedMarketIds.filter((id) => valid.has(id)).slice(0, 6);
+  const fromFixture = primary ? marketsForFixture(primary, markets).map((m) => m.marketId) : [];
+  const related = [...new Set([...fromFixture, ...result.relatedMarketIds.filter((id) => valid.has(id))])].slice(0, 6);
+
+  // For a real game that hasn't finished, the draft comes from the fixture itself: exact
+  // kickoff, a precise rule and the official match page, not an AI guess.
+  const templates = primary && primary.state !== "post" ? templatesFor(primary, nowSec) : [];
+  const template = templates[0] ?? null;
+  const draft = template
+    ? {
+        question: template.draft.question,
+        resolutionRule: template.draft.resolutionRule,
+        category: "sports",
+        resolvesInDays: Math.max(1, Math.ceil((template.draft.resolutionTime - nowSec) / 86_400)),
+      }
+    : { ...result.draft, resolvesInDays: Math.min(365, Math.max(1, Math.round(result.draft.resolvesInDays))) };
+
+  const fixture: MatchedFixture | null = primary
+    ? {
+        id: primary.id,
+        league: primary.leagueLabel,
+        name: `${primary.away?.name ?? "?"} at ${primary.home?.name ?? "?"}`,
+        startsAt: primary.startsAt,
+        state: primary.state,
+        statusDetail: primary.statusDetail,
+        venue: primary.venue,
+        score:
+          primary.state !== "pre" && primary.home?.score != null && primary.away?.score != null
+            ? `${primary.home.short} ${primary.home.score} – ${primary.away.score} ${primary.away.short}`
+            : null,
+      }
+    : null;
+
   return {
-    ...result,
+    summary: result.summary,
+    angles: result.angles,
     relatedMarketIds: related,
     related: markets.filter((m) => related.includes(m.marketId)),
-    draft: { ...result.draft, resolvesInDays: Math.min(365, Math.max(1, Math.round(result.draft.resolvesInDays))) },
+    draft,
+    fixture,
+    forgeHref: template && primary ? `/forge?fixture=${encodeURIComponent(primary.id)}&d=${primary.startsAt.slice(0, 10).replace(/-/g, "")}` : null,
   };
 }

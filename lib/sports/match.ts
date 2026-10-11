@@ -55,6 +55,32 @@ function mentionsStrongly(title: string, p: Participant | null): boolean {
 }
 
 /**
+ * Real fixtures a piece of text is about, best first: games naming both sides beat games
+ * naming one side clearly; then live games, then the soonest upcoming, then recent finals.
+ */
+export function fixturesInText(text: string, fixtures: Fixture[]): Fixture[] {
+  const now = Date.now();
+  const scored = fixtures
+    .map((f) => {
+      const both = mentions(text, f.home) && mentions(text, f.away) && (mentionsStrongly(text, f.home) || mentionsStrongly(text, f.away));
+      const one = mentionsStrongly(text, f.home) || mentionsStrongly(text, f.away);
+      return { f, score: both ? 2 : one ? 1 : 0 };
+    })
+    .filter((x) => x.score > 0);
+  const best = Math.max(0, ...scored.map((x) => x.score));
+  const rank = (f: Fixture) => {
+    const t = Date.parse(f.startsAt);
+    if (f.state === "in") return 0;
+    if (f.state === "pre") return 1 + (t - now) / 1e12;
+    return 3 + (now - t) / 1e12;
+  };
+  return scored
+    .filter((x) => x.score === best)
+    .map((x) => x.f)
+    .sort((a, b) => rank(a) - rank(b));
+}
+
+/**
  * A market belongs to a fixture when its title names both sides, or names one side and its
  * trading window overlaps the fixture's day. Ambiguous one-word aliases ("united", "city")
  * only count alongside the other team, so they cannot cause false matches on their own.

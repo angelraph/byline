@@ -5,8 +5,22 @@ import { useState } from "react";
 import type { Market } from "@/lib/panta/schemas";
 import { apiPost, ClientApiError } from "@/lib/client/api";
 import { odds, marketTitle } from "@/lib/format";
+import { LocalTime } from "@/components/local-time";
+
+type MatchedFixture = {
+  id: string;
+  league: string;
+  name: string;
+  startsAt: string;
+  state: "pre" | "in" | "post";
+  statusDetail: string;
+  venue: string | null;
+  score: string | null;
+};
 
 type Result = {
+  fixture: MatchedFixture | null;
+  forgeHref: string | null;
   summary: string;
   angles: string[];
   related: Market[];
@@ -33,7 +47,9 @@ export function HeadlineBrief() {
     }
   }
 
-  const forgeHref = result
+  const forgeHref = result?.forgeHref
+    ? result.forgeHref
+    : result
     ? `/forge?${new URLSearchParams({
         q: result.draft.question,
         rule: result.draft.resolutionRule,
@@ -73,6 +89,24 @@ export function HeadlineBrief() {
           </div>
         ) : (
           <>
+            {result.fixture ? (
+              <section className="rounded-2xl border border-accent/40 bg-accent-soft p-5">
+                <p className="text-xs font-semibold uppercase tracking-wider text-accent">Matched game</p>
+                <p className="mt-1 font-display text-lg font-semibold">{result.fixture.name}</p>
+                <p className="mt-1 text-sm text-paper-dim">
+                  {result.fixture.league} · <LocalTime iso={result.fixture.startsAt} withDate />
+                  {result.fixture.venue ? ` · ${result.fixture.venue}` : ""}
+                </p>
+                <p className="mt-1 text-sm font-semibold">
+                  {result.fixture.state === "in"
+                    ? `Live now · ${result.fixture.statusDetail}${result.fixture.score ? ` · ${result.fixture.score}` : ""}`
+                    : result.fixture.state === "post"
+                      ? `Finished${result.fixture.score ? ` · ${result.fixture.score}` : ""}`
+                      : "Not started yet"}
+                </p>
+              </section>
+            ) : null}
+
             <section className="rounded-2xl border border-line bg-ink-2 p-5">
               <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-accent">Brief</p>
               <p className="mt-2">{result.summary}</p>
