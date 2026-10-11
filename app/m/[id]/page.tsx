@@ -10,6 +10,7 @@ import { cents, marketTitle, num, pct, relativeTime, shortAddr, usdc } from "@/l
 import { Notice, PhaseBadge, SectionHeader } from "@/components/ui";
 import { LocalTime } from "@/components/local-time";
 import { TradeAndCall } from "@/components/social/trade-and-call";
+import { MarketExplainer, MarketExplainerSkeleton } from "@/components/explainer";
 import { MarketFeed } from "@/components/social/market-feed";
 import { isDbConfigured } from "@/lib/db";
 import { getCall } from "@/lib/social";
@@ -128,6 +129,10 @@ export default async function MarketPage({
             text={`${marketTitle(market)} YES ${cents(market.yesPrice)} / NO ${cents(market.noPrice)}. Make the call on Byline.`}
           />
         </header>
+
+        <Suspense fallback={<MarketExplainerSkeleton />}>
+          <MarketExplainer marketId={market.marketId} source={market.oracle} />
+        </Suspense>
 
         <section aria-label="Current line" className="rounded-2xl border border-line bg-ink-2 p-5">
           {yes !== null && no !== null ? (
