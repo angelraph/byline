@@ -175,7 +175,11 @@ export async function briefHeadline(text: string) {
   // kickoff, a precise rule and the official match page, not an AI guess.
   const templates = primary && primary.state !== "post" ? templatesFor(primary, nowSec) : [];
   const template = templates[0] ?? null;
-  const draft = template
+  // A game that has already finished gets no draft: its result is known.
+  const finished = primary?.state === "post";
+  const draft = finished
+    ? null
+    : template
     ? {
         question: template.draft.question,
         resolutionRule: template.draft.resolutionRule,

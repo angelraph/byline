@@ -24,7 +24,7 @@ type Result = {
   summary: string;
   angles: string[];
   related: Market[];
-  draft: { question: string; resolutionRule: string; category: string; resolvesInDays: number };
+  draft: { question: string; resolutionRule: string; category: string; resolvesInDays: number } | null;
 };
 
 export function HeadlineBrief() {
@@ -49,7 +49,7 @@ export function HeadlineBrief() {
 
   const forgeHref = result?.forgeHref
     ? result.forgeHref
-    : result
+    : result?.draft
     ? `/forge?${new URLSearchParams({
         q: result.draft.question,
         rule: result.draft.resolutionRule,
@@ -85,7 +85,7 @@ export function HeadlineBrief() {
       <div className="space-y-5">
         {!result ? (
           <div className="rounded-2xl border border-dashed border-line-strong p-8 text-center text-sm text-paper-mute">
-            Your scouting report, the Panta markets already pricing it, and a ready-to-forge market appear here.
+            The real game it matches, a plain-English brief, the markets already pricing it, and a draft market appear here.
           </div>
         ) : (
           <>
@@ -135,14 +135,20 @@ export function HeadlineBrief() {
               )}
             </section>
 
-            <section className="rounded-2xl border border-accent/40 bg-accent/5 p-5">
-              <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-accent">Draft market</p>
-              <p className="mt-2 font-display text-lg leading-snug">{result.draft.question}</p>
-              <p className="mt-2 text-xs text-paper-dim">{result.draft.resolutionRule}</p>
-              <Link href={forgeHref} className="mt-4 inline-block rounded-full bg-accent px-4 py-2 text-sm font-semibold text-accent-ink">
-                Open in Forge →
-              </Link>
-            </section>
+            {result.draft ? (
+              <section className="rounded-2xl border border-accent/40 bg-accent/5 p-5">
+                <p className="text-xs font-semibold uppercase tracking-wider text-accent">Draft market</p>
+                <p className="mt-2 font-display text-lg leading-snug">{result.draft.question}</p>
+                <p className="mt-2 text-xs text-paper-dim">{result.draft.resolutionRule}</p>
+                <Link href={forgeHref} className="mt-4 inline-block rounded-full bg-accent px-4 py-2 text-sm font-semibold text-accent-ink">
+                  Open in Create →
+                </Link>
+              </section>
+            ) : (
+              <p className="rounded-2xl border border-line bg-ink-2 p-5 text-sm text-paper-dim">
+                This game has already finished, so there&apos;s nothing left to bet on. Try an upcoming match instead.
+              </p>
+            )}
           </>
         )}
       </div>
